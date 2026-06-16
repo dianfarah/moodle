@@ -1,0 +1,71 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_attendanceleaderboard/block_content
+
+    Main block content template for ACMLS. Renders leaderboard, resource
+    recommendations, and encouragement message sections conditionally.
+
+    Context variables required for this template:
+    * has_leaderboard    - boolean, whether leaderboard section should be shown
+    * leaderboard        - string, pre-rendered leaderboard HTML
+    * has_recommendations - boolean, whether recommendations section should be shown
+    * recommendations    - string, pre-rendered recommendations HTML
+    * has_encouragement  - boolean, whether encouragement section should be shown
+    * encouragement      - string, pre-rendered encouragement HTML
+    * userid             - int, current user ID
+    * courseid           - int, current course ID
+    * show_consent_dialog - boolean, whether the consent dialog should be shown
+    * consent_dialog     - string, pre-rendered consent dialog HTML
+}}
+<div class="block-attendanceleaderboard-content"
+     data-userid="{{userid}}"
+     data-courseid="{{courseid}}">
+
+    {{#show_consent_dialog}}
+    {{{consent_dialog}}}
+    {{/show_consent_dialog}}
+
+    {{#has_leaderboard}}
+    <div class="acmls-leaderboard-section mb-3">
+        {{{leaderboard}}}
+    </div>
+    {{/has_leaderboard}}
+
+    {{#has_recommendations}}
+    <div class="acmls-recommendations-section mb-3">
+        {{{recommendations}}}
+    </div>
+    {{/has_recommendations}}
+
+    {{#has_encouragement}}
+    <div class="acmls-encouragement-section mb-3">
+        {{{encouragement}}}
+    </div>
+    {{/has_encouragement}}
+
+    {{^has_leaderboard}}
+    {{^has_recommendations}}
+    {{^has_encouragement}}
+    <div class="acmls-empty-state text-center py-3">
+        <p class="text-muted small">{{#str}}leaderboard_no_data, block_attendanceleaderboard{{/str}}</p>
+    </div>
+    {{/has_encouragement}}
+    {{/has_recommendations}}
+    {{/has_leaderboard}}
+
+</div>

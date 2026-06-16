@@ -1,0 +1,200 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * AMD module for ACMLS Learner consent dialog.
+ *
+ * Displays a Bootstrap modal asking the Learner for explicit consent before
+ * their anonymised data is sent to an external LLM service. Saves the
+ * consent decision via a Moodle AJAX web service call.
+ *
+ * Requirements addressed:
+ * - Req 15.5: Explicit Learner consent before data is sent to external services.
+ *
+ * @module     block_attendanceleaderboard/consent_dialog
+ * @copyright  2024 ACMLS Project
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+define([
+    'jquery',
+    'core/ajax',
+    'core/notification',
+    'core/templates'
+], function($, Ajax, Notification, Templates) {
+
+    'use strict';
+
+    /** @type {boolean} Whether the module has been initialised. */
+    var initialised = false;
+
+    /**
+     * Save the Learner's consent decision via AJAX.
+     *
+     * @param {number}  userid    Moodle user ID.
+     * @param {number}  courseid  Moodle course ID.
+     * @param {boolean} consent   True = agreed, false = declined.
+     * @return {Promise}          jQuery promise resolved on success.
+     */
+    var saveConsent = function(userid, courseid, consent) {
+        return Ajax.call([{
+            methodname: 'block_attendanceleaderboard_save_consent',
+            args: {
+                userid: userid,
+                courseid: courseid,
+                consent: consent
+            }
+        }])[0];
+    };
+
+    /**
+     * Hide and remove the consent modal from the DOM.
+     */
+    var hideModal = function() {
+        var $modal = $('#acmlsConsentModal');
+        if ($modal.length) {
+            $modal.modal('hide');
+            // Remove backdrop and modal after animation.
+            $modal.on('hidden.bs.modal', function() {
+                $modal.remove();
+                $('.modal-backdrop').remove();
+                $('body').removeClass('modal-open');
+            });
+        }
+    };
+
+    /**
+     * Handle the "Agree" button click.
+     *
+     * Saves consent = true, then hides the modal.
+     *
+     * @param {number} userid   Moodle user ID.
+     * @param {number} courseid Moodle course ID.
+     */
+    var handleAgree = function(userid, courseid) {
+        saveConsent(userid, courseid, true)
+            .then(function(result) {
+                if (result && result.success) {
+                    hideModal();
+                } else {
+                    Notification.addNotification({
+                        message: result.message || 'Failed to save consent.',
+                        type: 'error'
+                    });
+                }
+                return result;
+            })
+            .fail(function(err) {
+                if (typeof console !== 'undefined' && console.warn) {
+                    console.warn('ACMLS: Failed to save consent (agree)', err);
+                }
+                // Still hide the modal to avoid blocking the user.
+                hideModal();
+            });
+    };
+
+    /**
+     * Handle the "Decline" button click.
+     *
+     * Saves consent = false, then hides the modal.
+     *
+     * @param {number} userid   Moodle user ID.
+     * @param {number} courseid Moodle course ID.
+     */
+    var handleDecline = function(userid, courseid) {
+        saveConsent(userid, courseid, false)
+            .then(function(result) {
+                hideModal();
+                return result;
+            })
+            .fail(function(err) {
+                if (typeof console !== 'undefined' && console.warn) {
+                    console.warn('ACMLS: Failed to save consent (decline)', err);
+                }
+                hideModal();
+            });
+    };
+
+    /**
+     * Attach event listeners to the consent modal buttons.
+     */
+    var attachListeners = function() {
+        // Agree button.
+        $(document).on('click', '.acmls-consent-agree', function() {
+            var $btn = $(this);
+            var userid = parseInt($btn.data('userid'), 10);
+            var courseid = parseInt($btn.data('courseid'), 10);
+            handleAgree(userid, courseid);
+        });
+
+        // Decline button.
+        $(document).on('click', '.acmls-consent-decline', function() {
+            var $btn = $(this);
+            var userid = parseInt($btn.data('userid'), 10);
+            var courseid = parseInt($btn.data('courseid'), 10);
+            handleDecline(userid, courseid);
+        });
+    };
+
+    /**
+     * Show the consent modal.
+     *
+     * Looks for an existing #acmlsConsentModal in the DOM and shows it.
+     * The modal HTML is expected to have been rendered server-side and
+     * injected into the page via the block_content template.
+     */
+    var showModal = function() {
+        var $modal = $('#acmlsConsentModal');
+        if ($modal.length) {
+            $modal.modal({
+                backdrop: 'static',
+                keyboard: false,
+                show: true
+            });
+        }
+    };
+
+    /**
+     * Initialise the consent dialog module.
+     *
+     * Called from the block PHP renderer when the consent dialog should be shown.
+     * If hasConsent is already true (user previously agreed), the modal is not shown.
+     *
+     * @param {number}  userId     Moodle user ID.
+     * @param {number}  courseId   Moodle course ID.
+     * @param {boolean} hasConsent Whether the user has already given consent.
+     */
+    var init = function(userId, courseId, hasConsent) {
+        if (initialised) {
+            return;
+        }
+        initialised = true;
+
+        // If the user has already given consent, no need to show the dialog.
+        if (hasConsent) {
+            return;
+        }
+
+        attachListeners();
+
+        // Show the modal after the DOM is ready.
+        $(document).ready(function() {
+            showModal();
+        });
+    };
+
+    return {
+        init: init
+    };
+});

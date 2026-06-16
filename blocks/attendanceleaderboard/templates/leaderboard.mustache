@@ -1,0 +1,437 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_attendanceleaderboard/leaderboard
+
+    Clean bar-style leaderboard with white base theme.
+    Supports two rendering modes:
+    1. Personal rank view (when userid is set): shows current_rank, total_score,
+       rank_change with arrow indicator, points_to_next, and display_name.
+    2. Full leaderboard list view (when entries array is set): shows all entries.
+
+    Context variables for personal rank view:
+    * userid               - int, current user ID
+    * current_rank         - int, user's current rank
+    * total_score          - string, formatted score (2 decimals)
+    * rank_change          - int, change in rank (positive = improved)
+    * rank_change_positive - bool, true if rank improved
+    * rank_change_negative - bool, true if rank declined
+    * rank_change_abs      - int, absolute value of rank_change
+    * points_to_next       - float, points needed to reach next rank
+    * display_name         - string, user's display name
+
+    Context variables for full list view:
+    * entries    - Array of leaderboard entries
+    * nostudents - No students message
+}}
+
+<style>
+/* Clean Bar-Style Leaderboard */
+.bar-leaderboard {
+    background: #ffffff;
+    border-radius: 15px;
+    padding: 16px;
+    margin: 20px 0;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    border: 1px solid rgba(0,0,0,0.05);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.leaderboard-header {
+    text-align: center;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.leaderboard-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #2d3748;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.title-icon {
+    font-size: 32px;
+    animation: iconBounce 2s ease-in-out infinite;
+}
+
+@keyframes iconBounce {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-5px); }
+}
+
+.leaderboard-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.leaderboard-bar {
+    height: 70px;
+    border-radius: 35px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0px;
+}
+
+.leaderboard-bar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+/* Rank Colors */
+.leaderboard-bar.rank-1 {
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    border: 2px solid #FFD700;
+    box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3);
+}
+
+.leaderboard-bar.rank-2 {
+    background: linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 100%);
+    border: 2px solid #C0C0C0;
+    box-shadow: 0 4px 20px rgba(192, 192, 192, 0.3);
+}
+
+.leaderboard-bar.rank-3 {
+    background: linear-gradient(135deg, #CD7F32 0%, #B8860B 100%);
+    border: 2px solid #CD7F32;
+    box-shadow: 0 4px 20px rgba(205, 127, 50, 0.3);
+}
+
+.leaderboard-bar:not(.rank-1):not(.rank-2):not(.rank-3) {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: 2px solid #667eea;
+    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+}
+
+.bar-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-right: 10px;
+    padding-left: 8px;
+    position: relative;
+    z-index: 2;
+    width: 100%;
+}
+
+.rank-1 .player-avatar::after {
+    content: '👑';
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 20px;
+    animation: crownFloat 3s ease-in-out infinite;
+}
+
+@keyframes crownFloat {
+    0%, 100% { transform: translateX(-50%) translateY(0px); }
+    50% { transform: translateX(-50%) translateY(-5px); }
+}
+
+.player-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    flex: 1;
+    text-align: center;
+}
+
+.player-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border:3px solid rgba(255, 255, 255, 0.8);
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    position: relative;
+}
+
+.player-avatar img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.score-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+}
+
+.score-value {
+    font-size: 28px;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    line-height: 1;
+    margin: 0;
+}
+
+.score-label {
+    font-size: 8px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+}
+
+.medal-icon {
+    position: absolute;
+    right: -35px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 24px;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    z-index: 3;
+}
+
+.progress-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 35px;
+    transition: width 2s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(5px);
+}
+
+.no-data-container {
+    text-align: center;
+    padding: 60px 20px;
+    color: #64748b;
+}
+
+.no-data-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+    opacity: 0.6;
+    animation: noDataFloat 4s ease-in-out infinite;
+}
+
+@keyframes noDataFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+.no-data-text {
+    font-size: 18px;
+    font-weight: 600;
+    color: #64748b;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .bar-leaderboard {
+        padding: 20px;
+        margin: 15px 0;
+    }
+    
+    .leaderboard-title {
+        font-size: 20px;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .leaderboard-bar {
+        height: 80px;
+    }
+    
+    .bar-content {
+        padding: 0 20px;
+        gap: 10px;
+    }
+    
+    .player-name {
+        white-space: normal;
+        text-align: center;
+        font-size: 16px;
+    }
+    
+    .score-value {
+        font-size: 24px;
+    }
+}
+
+@media (max-width: 480px) {
+    .leaderboard-bar {
+        height: 90px;
+    }
+    
+    .bar-content {
+        padding: 0 15px;
+        gap: 8px;
+    }
+    
+    .player-avatar {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .player-avatar img {
+        width: 34px;
+        height: 34px;
+    }
+    
+    .player-name {
+        font-size: 14px;
+    }
+    
+    .score-value {
+        font-size: 22px;
+    }
+    
+    .score-section {
+        min-width: 70px;
+    }
+}
+
+/* Animation for bars appearing */
+.leaderboard-bar {
+    animation: barSlideIn 0.6s ease-out forwards;
+    opacity: 0;
+    transform: translateX(-50px);
+}
+
+.leaderboard-bar:nth-child(1) { animation-delay: 0.1s; }
+.leaderboard-bar:nth-child(2) { animation-delay: 0.2s; }
+.leaderboard-bar:nth-child(3) { animation-delay: 0.3s; }
+.leaderboard-bar:nth-child(4) { animation-delay: 0.4s; }
+.leaderboard-bar:nth-child(5) { animation-delay: 0.5s; }
+
+@keyframes barSlideIn {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+</style>
+
+<div class="bar-leaderboard">
+    <div class="leaderboard-header">
+        <h4 class="leaderboard-title">
+            <span class="title-icon">🏆</span>
+            {{#str}}leaderboard_title, block_attendanceleaderboard{{/str}}
+            <span class="title-icon">🏆</span>
+        </h4>
+    </div>
+
+    <div class="leaderboard-list">
+        {{#entries}}
+        <div class="leaderboard-bar{{#rank}} rank-{{rank}}{{/rank}}">
+            <div class="progress-overlay" style="width: {{progress}}%;"></div>
+            
+            <div class="bar-content">
+                <div class="player-avatar">
+                    {{{picture}}}
+                </div>
+                <div class="player-name">{{{fullname}}}</div>
+                <div class="score-section" style="flex-direction: column; align-items: center; justify-content: center; gap: -10px;">
+                    <div class="score-value" title="Total: {{points}} pts | Attendance: {{attendancepoints}} pts | Activity: {{activitypoints}} pts">{{points}}</div>
+                    <div class="score-label">Points</div>
+                </div>
+            </div>
+        </div>
+        {{/entries}}
+    </div>
+
+    {{^entries}}
+    <div class="no-data-container">
+        <div class="no-data-icon">🎯</div>
+        <div class="no-data-text">{{nostudents}}</div>
+    </div>
+    {{/entries}}
+</div>
+
+{{! Personal rank view — rendered when current_rank is present }}
+{{#current_rank}}
+<div class="acmls-personal-rank card border-0 shadow-sm mb-2" data-userid="{{userid}}">
+    <div class="card-header bg-primary text-white py-2 px-3">
+        <h6 class="mb-0 fw-bold">
+            <i class="fa fa-trophy mr-2" aria-hidden="true"></i>
+            Peringkat Anda
+        </h6>
+    </div>
+    <div class="card-body py-3 px-3">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="text-center">
+                <div class="display-4 font-weight-bold text-primary">#{{current_rank}}</div>
+                <div class="small text-muted">Peringkat Saat Ini</div>
+            </div>
+            <div class="text-center">
+                <div class="h4 font-weight-bold text-dark">{{total_score}}</div>
+                <div class="small text-muted">Total Skor</div>
+            </div>
+            <div class="text-center">
+                {{#rank_change_positive}}
+                <div class="h5 text-success font-weight-bold">
+                    ↑ {{rank_change_abs}}
+                </div>
+                <div class="small text-success">Naik</div>
+                {{/rank_change_positive}}
+                {{#rank_change_negative}}
+                <div class="h5 text-danger font-weight-bold">
+                    ↓ {{rank_change_abs}}
+                </div>
+                <div class="small text-danger">Turun</div>
+                {{/rank_change_negative}}
+                {{^rank_change_positive}}
+                {{^rank_change_negative}}
+                <div class="h5 text-muted font-weight-bold">—</div>
+                <div class="small text-muted">Tetap</div>
+                {{/rank_change_negative}}
+                {{/rank_change_positive}}
+            </div>
+        </div>
+        {{#display_name}}
+        <div class="small text-muted text-center mb-1">
+            <i class="fa fa-user mr-1" aria-hidden="true"></i>{{display_name}}
+        </div>
+        {{/display_name}}
+        {{#points_to_next}}
+        <div class="small text-center text-info">
+            <i class="fa fa-arrow-up mr-1" aria-hidden="true"></i>
+            {{points_to_next}} poin lagi ke peringkat berikutnya
+        </div>
+        {{/points_to_next}}
+    </div>
+</div>
+{{/current_rank}}

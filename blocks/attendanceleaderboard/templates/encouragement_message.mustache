@@ -1,0 +1,66 @@
+{{!
+    @template block_attendanceleaderboard/encouragement_message
+
+    Motivation popup that requires the learner to report how they feel after
+    receiving the encouragement message.
+}}
+<div class="acmls-motivation-popup"
+     data-userid="{{userid}}"
+     data-courseid="{{courseid}}"
+     data-sentenceid="{{sentenceid}}"
+     data-category="{{category}}"
+     data-source="{{source}}"
+     data-content="{{content}}">
+    <div class="acmls-motivation-popup__backdrop"></div>
+    <div class="acmls-motivation-popup__dialog"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="acmls-motivation-title-{{userid}}-{{sentenceid}}">
+        <div class="acmls-motivation-popup__header">
+            <div>
+                <p class="acmls-motivation-popup__eyebrow">{{str_popup_title}}</p>
+                <h3 id="acmls-motivation-title-{{userid}}-{{sentenceid}}" class="acmls-motivation-popup__title">
+                    {{category_label}}
+                </h3>
+            </div>
+        </div>
+
+        <div class="acmls-motivation-popup__body">
+            <p class="acmls-motivation-popup__message">{{content}}</p>
+            <p class="acmls-motivation-popup__helper">{{str_popup_body}}</p>
+
+            <form class="acmls-motivation-feedback-form" novalidate>
+                <fieldset class="acmls-motivation-popup__fieldset">
+                    <legend class="acmls-motivation-popup__legend">{{str_feeling_prompt}}</legend>
+                    <div class="acmls-motivation-popup__options">
+                        {{#feelings}}
+                        <label class="acmls-motivation-popup__option">
+                            <input type="radio"
+                                   name="acmls-feeling-{{userid}}-{{sentenceid}}"
+                                   value="{{key}}"
+                                   data-score="{{score}}">
+                            <span>{{label}}</span>
+                        </label>
+                        {{/feelings}}
+                    </div>
+                </fieldset>
+
+                <label class="acmls-motivation-popup__note">
+                    <span>{{str_reflection_label}}</span>
+                    <textarea class="form-control"
+                              name="reflection_note"
+                              rows="3"
+                              maxlength="500"
+                              placeholder="{{str_reflection_placeholder}}"></textarea>
+                </label>
+
+                <p class="acmls-motivation-popup__required d-none">{{str_required}}</p>
+                <p class="acmls-motivation-popup__notice">{{str_research_notice}}</p>
+
+                <button type="submit" class="btn btn-primary acmls-motivation-popup__submit">
+                    {{str_submit}}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,158 @@
+{{!
+    Template: block_attendanceleaderboard/learner_profile_detail
+
+    Displays the full ACMLS profile for a single learner, including a
+    profile history table (last 10 profile_snapshot records).
+
+    Context variables:
+      - has_profile          (bool)   Whether a profile record exists.
+      - learner_fullname     (string) Full name of the learner.
+      - userid               (int)    Moodle user ID.
+      - courseid             (int)    Moodle course ID.
+      - profile_version      (int)    Current profile version number.
+      - performance_category (string) Localised label: Low / Middle / High.
+      - performance_class    (string) Bootstrap colour: danger / warning / success.
+      - cognitive_level      (string) Localised label: Low / Middle / High.
+      - motivation_level     (string) Formatted percentage value (e.g. "72.5").
+      - motivation_pct       (float)  Numeric percentage for the progress bar.
+      - mot_bar_class        (string) Bootstrap bg-* class for the progress bar.
+      - learning_style       (string) Learning style label.
+      - behavioral_score     (string) Formatted decimal score.
+      - engagement_score     (string) Formatted decimal score.
+      - last_updated         (string) Human-readable date string.
+      - has_history          (bool)   Whether history records exist.
+      - history              (array)  Array of history rows:
+            - timecreated          (string) Formatted date.
+            - profile_version      (int)    Version number.
+            - performance_category (string) Localised label.
+            - motivation_level     (string) Formatted percentage.
+      - back_url             (string) URL back to the learner profiles list.
+      - profile_url          (string) URL to the learner's Moodle profile.
+      - noprofilefound       (string) Message when no profile exists (only when has_profile=false).
+
+    @package   block_attendanceleaderboard
+    @copyright 2024 ACMLS Project
+    @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
+
+<div class="acmls-learner-profile-detail">
+
+    {{! Back link }}
+    <p>
+        <a href="{{back_url}}" class="btn btn-secondary btn-sm">
+            &larr; {{#str}} backtolist, block_attendanceleaderboard {{/str}}
+        </a>
+    </p>
+
+    {{#has_profile}}
+
+    {{! Profile summary card }}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <a href="{{profile_url}}">{{learner_fullname}}</a>
+            </h5>
+            <span class="badge badge-{{performance_class}} badge-pill">
+                {{#str}} performancecategory, block_attendanceleaderboard {{/str}}:
+                {{performance_category}}
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="row">
+
+                {{! Left column }}
+                <div class="col-md-6">
+                    <dl class="row">
+
+                        <dt class="col-sm-6">{{#str}} profileversion, block_attendanceleaderboard {{/str}}</dt>
+                        <dd class="col-sm-6">{{profile_version}}</dd>
+
+                        <dt class="col-sm-6">{{#str}} performancecategory, block_attendanceleaderboard {{/str}}</dt>
+                        <dd class="col-sm-6">
+                            <span class="badge badge-{{performance_class}}">{{performance_category}}</span>
+                        </dd>
+
+                        <dt class="col-sm-6">{{#str}} cognitivelevel, block_attendanceleaderboard {{/str}}</dt>
+                        <dd class="col-sm-6">{{cognitive_level}}</dd>
+
+                        <dt class="col-sm-6">{{#str}} learningstyle, block_attendanceleaderboard {{/str}}</dt>
+                        <dd class="col-sm-6">{{learning_style}}</dd>
+
+                    </dl>
+                </div>
+
+                {{! Right column }}
+                <div class="col-md-6">
+                    <dl class="row">
+
+                        <dt class="col-sm-6">{{#str}} motivationlevel, block_attendanceleaderboard {{/str}}</dt>
+                        <dd class="col-sm-6">
+                            <span>{{motivation_level}}%</span>
+                            <div class="progress mt-1" style="height:10px;">
+                                <div class="progress-bar {{mot_bar_class}}"
+                                     role="progressbar"
+                                     style="width:{{motivation_pct}}%"
+                                     aria-valuenow="{{motivation_pct}}"
+                                     aria-valuemin="0"
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                        </dd>
+
+                        <dt class="col-sm-6">{{#str}} behavioralscore, block_attendanceleaderboard {{/str}}</dt>
+                        <dd class="col-sm-6">{{behavioral_score}}</dd>
+
+                        <dt class="col-sm-6">{{#str}} engagementscore, block_attendanceleaderboard {{/str}}</dt>
+                        <dd class="col-sm-6">{{engagement_score}}</dd>
+
+                        <dt class="col-sm-6">{{#str}} lastupdated, block_attendanceleaderboard {{/str}}</dt>
+                        <dd class="col-sm-6">{{last_updated}}</dd>
+
+                    </dl>
+                </div>
+
+            </div>{{! /.row }}
+        </div>{{! /.card-body }}
+    </div>{{! /.card }}
+
+    {{! Profile history }}
+    <h5>{{#str}} profilehistory, block_attendanceleaderboard {{/str}}</h5>
+
+    {{#has_history}}
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered table-hover">
+            <thead class="thead-light">
+                <tr>
+                    <th>{{#str}} lastupdated, block_attendanceleaderboard {{/str}}</th>
+                    <th>{{#str}} profileversion, block_attendanceleaderboard {{/str}}</th>
+                    <th>{{#str}} performancecategory, block_attendanceleaderboard {{/str}}</th>
+                    <th>{{#str}} motivationlevel, block_attendanceleaderboard {{/str}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#history}}
+                <tr>
+                    <td>{{timecreated}}</td>
+                    <td>{{profile_version}}</td>
+                    <td>{{performance_category}}</td>
+                    <td>{{motivation_level}}</td>
+                </tr>
+                {{/history}}
+            </tbody>
+        </table>
+    </div>
+    {{/has_history}}
+
+    {{^has_history}}
+    <p class="text-muted">{{#str}} noprofilefound, block_attendanceleaderboard {{/str}}</p>
+    {{/has_history}}
+
+    {{/has_profile}}
+
+    {{^has_profile}}
+    <div class="alert alert-warning">
+        {{noprofilefound}}
+    </div>
+    {{/has_profile}}
+
+</div>{{! /.acmls-learner-profile-detail }}

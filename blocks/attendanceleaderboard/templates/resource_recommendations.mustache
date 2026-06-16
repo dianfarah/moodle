@@ -1,0 +1,70 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_attendanceleaderboard/resource_recommendations
+
+    Displays a list of personalised learning resource recommendations.
+
+    Context variables required for this template:
+    * userid        - int, current user ID
+    * resources     - array of resource objects:
+    *   - id              (int)
+    *   - title           (string)
+    *   - resource_type   (string)
+    *   - difficulty_level (int)
+    *   - difficulty_label (string) — 'Dasar', 'Menengah', or 'Lanjutan'
+    * has_resources  - boolean
+}}
+<div class="acmls-resource-recommendations card border-0 shadow-sm">
+    <div class="card-header bg-primary text-white py-2 px-3">
+        <h6 class="mb-0 fw-bold">
+            <i class="fa fa-book mr-2" aria-hidden="true"></i>
+            Rekomendasi Sumber Belajar
+        </h6>
+    </div>
+
+    {{#has_resources}}
+    <ul class="list-group list-group-flush">
+        {{#resources}}
+        <li class="list-group-item px-3 py-2">
+            <div class="d-flex align-items-start justify-content-between">
+                <div class="flex-grow-1 mr-2">
+                    <a href="#"
+                       class="acmls-resource-link text-decoration-none font-weight-semibold"
+                       data-resourceid="{{id}}"
+                       data-userid="{{../userid}}"
+                       title="{{title}}">
+                        {{title}}
+                    </a>
+                    <div class="small text-muted mt-1">
+                        <span class="badge badge-secondary mr-1">{{resource_type}}</span>
+                        <span class="badge badge-info">{{difficulty_label}}</span>
+                    </div>
+                </div>
+                <i class="fa fa-chevron-right text-muted mt-1" aria-hidden="true"></i>
+            </div>
+        </li>
+        {{/resources}}
+    </ul>
+    {{/has_resources}}
+
+    {{^has_resources}}
+    <div class="card-body text-center py-3">
+        <p class="text-muted small mb-0">Belum ada rekomendasi sumber belajar tersedia.</p>
+    </div>
+    {{/has_resources}}
+</div>

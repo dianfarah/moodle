@@ -1,0 +1,232 @@
+{{!
+    This file is part of Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template block_attendanceleaderboard/analytics_dashboard
+
+    ACMLS Analytics Dashboard — admin page template.
+
+    Displays three analytics cards:
+    1. Performance_Category distribution (Low / Middle / High)
+    2. Average Motivation_Level per course
+    3. Intervention effectiveness (positive response percentage)
+
+    Context variables:
+    * has_data                   - bool, false when no data is available yet
+    * total_learners             - int, total number of learner profiles
+    * performance_distribution   - array of {category_name, count, percentage, css_class}
+    * motivation_per_course      - array of {courseid, coursename, avg_motivation, avg_motivation_formatted}
+    * intervention_effectiveness - {total_decisions, positive_responses, effectiveness_percentage, effectiveness_formatted}
+}}
+
+<div class="acmls-analytics-dashboard container-fluid py-4" role="main">
+
+    {{! Page heading }}
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="h3 font-weight-bold text-dark mb-1">
+                <i class="fa fa-bar-chart mr-2" aria-hidden="true"></i>
+                {{#str}}analytics_dashboard_title, block_attendanceleaderboard{{/str}}
+            </h2>
+            <p class="text-muted mb-0">
+                {{#str}}total_learners, block_attendanceleaderboard{{/str}}:
+                <strong>{{total_learners}}</strong>
+            </p>
+        </div>
+    </div>
+
+    {{#has_data}}
+
+    <div class="row">
+
+        {{! ------------------------------------------------------------------ }}
+        {{! Card 1: Performance Category Distribution                          }}
+        {{! ------------------------------------------------------------------ }}
+        <div class="col-12 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="h5 mb-0 font-weight-bold">
+                        <i class="fa fa-pie-chart mr-2" aria-hidden="true"></i>
+                        {{#str}}performance_distribution, block_attendanceleaderboard{{/str}}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    {{#performance_distribution}}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="font-weight-semibold">
+                                <span class="badge badge-{{css_class}} mr-1" aria-hidden="true">
+                                    {{category_name}}
+                                </span>
+                                {{category_name}}
+                            </span>
+                            <span class="text-muted small">
+                                {{count}} ({{percentage}}%)
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 10px;"
+                             role="progressbar"
+                             aria-valuenow="{{percentage}}"
+                             aria-valuemin="0"
+                             aria-valuemax="100"
+                             aria-label="{{category_name}}: {{percentage}}%">
+                            <div class="progress-bar bg-{{css_class}}"
+                                 style="width: {{percentage}}%;">
+                            </div>
+                        </div>
+                    </div>
+                    {{/performance_distribution}}
+
+                    {{^performance_distribution}}
+                    <p class="text-muted text-center py-3">
+                        {{#str}}no_data_available, block_attendanceleaderboard{{/str}}
+                    </p>
+                    {{/performance_distribution}}
+                </div>
+                <div class="card-footer text-muted small">
+                    {{#str}}total_learners, block_attendanceleaderboard{{/str}}: <strong>{{total_learners}}</strong>
+                </div>
+            </div>
+        </div>
+
+        {{! ------------------------------------------------------------------ }}
+        {{! Card 2: Average Motivation Level per Course                        }}
+        {{! ------------------------------------------------------------------ }}
+        <div class="col-12 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-info text-white">
+                    <h3 class="h5 mb-0 font-weight-bold">
+                        <i class="fa fa-line-chart mr-2" aria-hidden="true"></i>
+                        {{#str}}motivation_per_course, block_attendanceleaderboard{{/str}}
+                    </h3>
+                </div>
+                <div class="card-body p-0">
+                    {{#motivation_per_course}}
+                    <table class="table table-striped table-hover mb-0"
+                           aria-label="{{#str}}motivation_per_course, block_attendanceleaderboard{{/str}}">
+                        <thead class="thead-light">
+                            <tr>
+                                <th scope="col">
+                                    {{#str}}course_name, block_attendanceleaderboard{{/str}}
+                                </th>
+                                <th scope="col" class="text-right">
+                                    {{#str}}avg_motivation, block_attendanceleaderboard{{/str}}
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{#motivation_per_course}}
+                            <tr>
+                                <td>{{coursename}}</td>
+                                <td class="text-right font-weight-bold">
+                                    {{avg_motivation_formatted}}
+                                </td>
+                            </tr>
+                            {{/motivation_per_course}}
+                        </tbody>
+                    </table>
+                    {{/motivation_per_course}}
+
+                    {{^motivation_per_course}}
+                    <p class="text-muted text-center py-3 px-3">
+                        {{#str}}no_data_available, block_attendanceleaderboard{{/str}}
+                    </p>
+                    {{/motivation_per_course}}
+                </div>
+            </div>
+        </div>
+
+        {{! ------------------------------------------------------------------ }}
+        {{! Card 3: Intervention Effectiveness                                 }}
+        {{! ------------------------------------------------------------------ }}
+        <div class="col-12 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-success text-white">
+                    <h3 class="h5 mb-0 font-weight-bold">
+                        <i class="fa fa-check-circle mr-2" aria-hidden="true"></i>
+                        {{#str}}intervention_effectiveness, block_attendanceleaderboard{{/str}}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    {{#intervention_effectiveness}}
+
+                    {{! Big effectiveness percentage display }}
+                    <div class="text-center mb-4">
+                        <div class="display-4 font-weight-bold text-success"
+                             aria-label="{{#str}}effectiveness_percentage, block_attendanceleaderboard{{/str}}: {{effectiveness_formatted}}">
+                            {{effectiveness_formatted}}
+                        </div>
+                        <div class="text-muted small">
+                            {{#str}}effectiveness_percentage, block_attendanceleaderboard{{/str}}
+                        </div>
+                    </div>
+
+                    {{! Progress bar }}
+                    <div class="progress mb-3" style="height: 14px;"
+                         role="progressbar"
+                         aria-valuenow="{{effectiveness_percentage}}"
+                         aria-valuemin="0"
+                         aria-valuemax="100"
+                         aria-label="{{#str}}effectiveness_percentage, block_attendanceleaderboard{{/str}}: {{effectiveness_formatted}}">
+                        <div class="progress-bar bg-success"
+                             style="width: {{effectiveness_percentage}}%;">
+                        </div>
+                    </div>
+
+                    {{! Detail stats }}
+                    <table class="table table-sm mb-0"
+                           aria-label="{{#str}}intervention_effectiveness, block_attendanceleaderboard{{/str}}">
+                        <tbody>
+                            <tr>
+                                <th scope="row" class="font-weight-normal text-muted">
+                                    {{#str}}total_decisions, block_attendanceleaderboard{{/str}}
+                                </th>
+                                <td class="text-right font-weight-bold">
+                                    {{total_decisions}}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="font-weight-normal text-muted">
+                                    {{#str}}positive_responses, block_attendanceleaderboard{{/str}}
+                                </th>
+                                <td class="text-right font-weight-bold text-success">
+                                    {{positive_responses}}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    {{/intervention_effectiveness}}
+                </div>
+            </div>
+        </div>
+
+    </div>{{! end .row }}
+
+    {{/has_data}}
+
+    {{^has_data}}
+    <div class="row">
+        <div class="col-12">
+            <div class="alert alert-info" role="alert">
+                <i class="fa fa-info-circle mr-2" aria-hidden="true"></i>
+                {{#str}}no_data_available, block_attendanceleaderboard{{/str}}
+            </div>
+        </div>
+    </div>
+    {{/has_data}}
+
+</div>{{! end .acmls-analytics-dashboard }}

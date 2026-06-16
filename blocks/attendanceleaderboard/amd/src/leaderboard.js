@@ -1,0 +1,130 @@
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
+/**
+ * AMD module for ACMLS leaderboard-specific interactions.
+ *
+ * Handles auto-refresh of the leaderboard every 15 minutes and applies
+ * CSS animations to highlight rank changes.
+ *
+ * @module     block_attendanceleaderboard/leaderboard
+ * @copyright  2024 ACMLS Project
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+define(['jquery', 'core/ajax', 'core/notification', 'core/templates'], function($, Ajax, Notification, Templates) {
+
+    'use strict';
+
+    /** @type {number} Auto-refresh interval in milliseconds (15 minutes). */
+    var REFRESH_INTERVAL_MS = 15 * 60 * 1000;
+
+    /** @type {number|null} setInterval handle for auto-refresh. */
+    var refreshTimer = null;
+
+    /**
+     * Apply a CSS animation to highlight rank change indicators.
+     *
+     * Adds the 'acmls-rank-change-animate' class to positive/negative rank
+     * change elements, then removes it after the animation completes.
+     */
+    var highlightRankChanges = function() {
+        var $positive = $('.acmls-personal-rank .text-success');
+        var $negative = $('.acmls-personal-rank .text-danger');
+
+        $positive.add($negative).each(function() {
+            var $el = $(this);
+            $el.addClass('acmls-rank-change-animate');
+            setTimeout(function() {
+                $el.removeClass('acmls-rank-change-animate');
+            }, 1500);
+        });
+    };
+
+    /**
+     * Refresh the leaderboard section by fetching updated data via AJAX.
+     *
+     * Calls the block_attendanceleaderboard_get_leaderboard_data web service
+     * and re-renders the leaderboard template with the new data.
+     *
+     * @param {number} userid   Moodle user ID.
+     * @param {number} courseid Moodle course ID.
+     */
+    var refreshLeaderboard = function(userid, courseid) {
+        Ajax.call([{
+            methodname: 'block_attendanceleaderboard_get_leaderboard_data',
+            args: {
+                userid: userid,
+                courseid: courseid
+            }
+        }])[0].then(function(response) {
+            if (!response || !response.rank_data) {
+                return;
+            }
+
+            return Templates.render('block_attendanceleaderboard/leaderboard', response.rank_data);
+        }).then(function(html) {
+            if (!html) {
+                return;
+            }
+
+            var $section = $('.acmls-leaderboard-section');
+            if ($section.length) {
+                $section.html(html);
+                highlightRankChanges();
+            }
+        }).fail(function(err) {
+            // Silently log — leaderboard refresh failure should not disrupt the user.
+            if (typeof console !== 'undefined' && console.warn) {
+                console.warn('ACMLS: Leaderboard refresh failed', err);
+            }
+        });
+    };
+
+    /**
+     * Initialise the leaderboard module.
+     *
+     * Applies initial rank change animations and sets up the auto-refresh
+     * timer to update the leaderboard every 15 minutes.
+     *
+     * @param {number} userid   Moodle user ID.
+     * @param {number} courseid Moodle course ID.
+     */
+    var init = function(userid, courseid) {
+
+        // Apply initial rank change highlight animation.
+        highlightRankChanges();
+
+        // Set up auto-refresh every 15 minutes.
+        if (refreshTimer !== null) {
+            clearInterval(refreshTimer);
+        }
+
+        refreshTimer = setInterval(function() {
+            refreshLeaderboard(userid, courseid);
+        }, REFRESH_INTERVAL_MS);
+
+        // Clean up timer when the page is unloaded.
+        $(window).on('beforeunload', function() {
+            if (refreshTimer !== null) {
+                clearInterval(refreshTimer);
+                refreshTimer = null;
+            }
+        });
+    };
+
+    return {
+        init: init
+    };
+});

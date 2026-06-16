@@ -1,0 +1,113 @@
+
+    // =========================================================================
+    // Tests 1-2: get_metadata()
+    // =========================================================================
+
+    /**
+     * Test 1: get_metadata() declares all 9 tables + OpenAI external service.
+     *
+     * @covers \block_attendanceleaderboard\privacy\provider::get_metadata
+     */
+    public function test_get_metadata_declares_all_tables_and_external_service(): void {
+        $collection = new collection('block_attendanceleaderboard');
+        $result = provider::get_metadata($collection);
+
+        $this->assertInstanceOf(collection::class, $result);
+
+        // Export the collection to inspect it.
+        $items = $result->get_collection();
+
+        // Count database tables.
+        $tables = array_filter($items, fn($item) => $item->get_name() === 'database_table');
+        $this->assertCount(9, $tables, 'Should declare 9 database tables.');
+
+        // Count external locations.
+        $external = array_filter($items, fn($item) => $item->get_name() === 'external_location');
+        $this->assertCount(1, $external, 'Should declare 1 external location (OpenAI API).');
+    }
+
+    /**
+     * Test 2: get_metadata() - each table has at least one field description.
+     *
+     * @covers \block_attendanceleaderboard\privacy\provider::get_metadata
+     */
+    public function test_get_metadata_each_table_has_field_descriptions(): void {
+        $collection = new collection('block_attendanceleaderboard');
+        $result = provider::get_metadata($collection);
+
+        $items = $result->get_collection();
+
+        foreach ($items as $item) {
+            if ($item->get_name() === 'database_table') {
+                $fields = $item->get_privacy_fields();
+                $this->assertNotEmpty($fields, 
+                    'Table ' . $item->get_summary() . ' should have at least one field description.');
+            }
+        }
+    }
+
+    // =========================================================================
+    // Tests 3-5: get_contexts_for_userid()
+    // =========================================================================
+
+    /**
+     * Test 3: get_contexts_for_userid() returns course contexts where user has data.
+     *
+     * @covers \block_attendanceleaderboard\privacy\provider::get_contexts_for_userid
+     */
+    public function test_get_contexts_for_userid_returns_course_contexts(): void {
+        $userid1 = (int) $this->user1->id;
+        $courseid1 = (int) $this->course1->id;
+        $courseid2 = (int) $this->course2->id;
+
+        // Insert data for user1 in course1 and course2.
+        $this->insert_learner_profile($userid1, $courseid1);
+        $this->insert_activity_log($userid1, $courseid2);
+
+        $contextlist = provider::get_contexts_for_userid($userid1);
+
+        $this->assertCount(2, $contextlist->get_contexts(), 
+            'Should return 2 course contexts for user1.');
+
+        $contextids = $contextlist->get_contextids();
+        $course1ctx = \context_course::instance($courseid1);
+        $course2ctx = \context_course::instance($courseid2);
+
+        $this->assertContains($course1ctx->id, $contextids);
+        $this->assertContains($course2ctx->id, $contextids);
+    }
+
+    /**
+     * Test 4: get_contexts_for_userid() returns system context for config audit log.
+     *
+     * @covers \block_attendanceleaderboard\privacy\provider::get_contexts_for_userid
+     */
+    public function test_get_contexts_for_userid_returns_system_context_for_config_audit(): void {
+        $userid1 = (int) $this->user1->id;
+
+        // Insert config audit log for user1.
+        $this->insert_config_audit_log($userid1);
+
+        $contextlist = provider::get_contexts_for_userid($userid1);
+
+        $contextids = $contextlist->get_contextids();
+        $systemctx = \context_system::instance();
+
+        $this->assertContains($systemctx->id, $contextids, 
+            'Should return system context for config audit log.');
+    }
+
+    /**
+     * Test 5: get_contexts_for_userid() returns empty list for user with no data.
+     *
+     * @covers \block_attendanceleaderboard\privacy\provider::get_contexts_for_userid
+     */
+    public function test_get_contexts_for_userid_returns_empty_for_user_with_no_data(): void {
+        $userid1 = (int) $this->user1->id;
+
+        // No data inserted for user1.
+        $contextlist = provider::get_contexts_for_userid($userid1);
+
+        $this->assertCount(0, $contextlist->get_contexts(), 
+            'Should return empty list for user with no data.');
+    }

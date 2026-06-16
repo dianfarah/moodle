@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="blocks/attendanceleaderboard/db" VERSION="20240101" COMMENT="XMLDB file for block_attendanceleaderboard (ACMLS)"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd">
+  <TABLES>
+
+    <!-- ============================================================ -->
+    <!-- Table: acmls_learner_profile                                  -->
+    <!-- Menyimpan model multidimensional Learner yang diperbarui      -->
+    <!-- secara dinamis oleh Profiling System.                         -->
+    <!-- ============================================================ -->
+    <TABLE NAME="acmls_learner_profile" COMMENT="Model multidimensional Learner yang diperbarui secara dinamis oleh Profiling System">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK ke mdl_user.id"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK ke mdl_course.id"/>
+        <FIELD NAME="cognitive_level" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1=Low, 2=Middle, 3=High"/>
+        <FIELD NAME="motivation_level" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="0.00 - 100.00"/>
+        <FIELD NAME="performance_category" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1=Low, 2=Middle, 3=High"/>
+        <FIELD NAME="learning_style" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="unknown" SEQUENCE="false"/>
+        <FIELD NAME="behavioral_score" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="engagement_score" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="profile_version" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
+        <FIELD NAME="last_updated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Unix timestamp"/>
+        <FIELD NAME="created_at" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Unix timestamp"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="uq_user_course" UNIQUE="true" FIELDS="userid, courseid"/>
+        <INDEX NAME="idx_performance" UNIQUE="false" FIELDS="performance_category"/>
+        <INDEX NAME="idx_motivation" UNIQUE="false" FIELDS="motivation_level"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================================================ -->
+    <!-- Table: acmls_activity_log                                     -->
+    <!-- Menyimpan rekaman seluruh aktivitas digital Learner di LMS.   -->
+    <!-- ============================================================ -->
+    <TABLE NAME="acmls_activity_log" COMMENT="Rekaman seluruh aktivitas digital Learner di LMS">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="event_type" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" COMMENT="e.g. course_module_viewed, quiz_submitted"/>
+        <FIELD NAME="component" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false" COMMENT="e.g. mod_quiz, mod_resource"/>
+        <FIELD NAME="objectid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="action" TYPE="char" LENGTH="100" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="duration_seconds" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="result_value" TYPE="number" LENGTH="10" DECIMALS="2" NOTNULL="false" SEQUENCE="false" COMMENT="Skor jika ada"/>
+        <FIELD NAME="context_data" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON metadata tambahan"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="sent_to_profiler" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_user_course" UNIQUE="false" FIELDS="userid, courseid"/>
+        <INDEX NAME="idx_event_type" UNIQUE="false" FIELDS="event_type"/>
+        <INDEX NAME="idx_timecreated" UNIQUE="false" FIELDS="timecreated"/>
+        <INDEX NAME="idx_sent" UNIQUE="false" FIELDS="sent_to_profiler"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================================================ -->
+    <!-- Table: acmls_motivation_sentence                              -->
+    <!-- Menyimpan konten motivasional dari LLM maupun template statis.-->
+    <!-- ============================================================ -->
+    <TABLE NAME="acmls_motivation_sentence" COMMENT="Konten motivasional yang dihasilkan LLM maupun template statis">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="category" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="reinforcement, achievement, recovery, persistence"/>
+        <FIELD NAME="performance_target" TYPE="int" LENGTH="1" NOTNULL="true" SEQUENCE="false" COMMENT="1=Low, 2=Middle, 3=High"/>
+        <FIELD NAME="motivation_target" TYPE="int" LENGTH="1" NOTNULL="true" SEQUENCE="false" COMMENT="1=Low, 2=Middle, 3=High"/>
+        <FIELD NAME="content" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="language" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="id" SEQUENCE="false"/>
+        <FIELD NAME="source" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="llm" SEQUENCE="false" COMMENT="llm atau template"/>
+        <FIELD NAME="llm_model" TYPE="char" LENGTH="100" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="learner_context" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON konteks anonim Learner"/>
+        <FIELD NAME="is_active" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
+        <FIELD NAME="usage_count" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_category" UNIQUE="false" FIELDS="category"/>
+        <INDEX NAME="idx_target" UNIQUE="false" FIELDS="performance_target, motivation_target"/>
+        <INDEX NAME="idx_active" UNIQUE="false" FIELDS="is_active"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================================================ -->
+    <!-- Table: acmls_learning_resource                                -->
+    <!-- Menyimpan metadata sumber belajar yang dapat direkomendasikan.-->
+    <!-- ============================================================ -->
+    <TABLE NAME="acmls_learning_resource" COMMENT="Metadata sumber belajar yang dapat direkomendasikan oleh Coach">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK ke mdl_course_modules.id"/>
+        <FIELD NAME="title" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="resource_type" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="video, document, quiz, forum, dll."/>
+        <FIELD NAME="difficulty_level" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="1=Basic, 2=Intermediate, 3=Advanced"/>
+        <FIELD NAME="topic_tags" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON array of tags"/>
+        <FIELD NAME="learning_styles" TYPE="char" LENGTH="200" NOTNULL="false" SEQUENCE="false" COMMENT="JSON array: visual, reading, dll."/>
+        <FIELD NAME="access_count" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="avg_rating" TYPE="number" LENGTH="3" DECIMALS="2" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="effectiveness_score" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="is_active" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="uq_cmid" UNIQUE="true" FIELDS="cmid"/>
+        <INDEX NAME="idx_difficulty" UNIQUE="false" FIELDS="difficulty_level"/>
+        <INDEX NAME="idx_course" UNIQUE="false" FIELDS="courseid"/>
+        <INDEX NAME="idx_active" UNIQUE="false" FIELDS="is_active"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================================================ -->
+    <!-- Table: acmls_learner_record                                   -->
+    <!-- Repositori analitik pembelajaran untuk data historis          -->
+    <!-- longitudinal dari semua komponen sistem.                      -->
+    <!-- ============================================================ -->
+    <TABLE NAME="acmls_learner_record" COMMENT="Repositori analitik pembelajaran untuk data historis longitudinal">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="record_type" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="profile_snapshot, performance, intervention, decision"/>
+        <FIELD NAME="source_component" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="profiling, evaluation, tracking, coach"/>
+        <FIELD NAME="data_payload" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="JSON data payload"/>
+        <FIELD NAME="profile_version" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_user_course" UNIQUE="false" FIELDS="userid, courseid"/>
+        <INDEX NAME="idx_record_type" UNIQUE="false" FIELDS="record_type"/>
+        <INDEX NAME="idx_timecreated" UNIQUE="false" FIELDS="timecreated"/>
+        <INDEX NAME="idx_source" UNIQUE="false" FIELDS="source_component"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================================================ -->
+    <!-- Table: acmls_coach_decision                                   -->
+    <!-- Menyimpan keputusan rekomendasi Coach beserta alasan untuk    -->
+    <!-- keperluan audit dan penelitian.                               -->
+    <!-- ============================================================ -->
+    <TABLE NAME="acmls_coach_decision" COMMENT="Keputusan rekomendasi Coach beserta alasan untuk audit dan penelitian">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="decision_type" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="resource_recommendation, motivation_intervention"/>
+        <FIELD NAME="input_profile" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="JSON snapshot Learner_Profile saat keputusan"/>
+        <FIELD NAME="recommended_resources" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON array resource IDs"/>
+        <FIELD NAME="motivation_category" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="reasoning" TYPE="text" NOTNULL="true" SEQUENCE="false" COMMENT="Penjelasan aturan yang diaktifkan"/>
+        <FIELD NAME="rules_triggered" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="JSON array rule IDs"/>
+        <FIELD NAME="learner_response" TYPE="int" LENGTH="1" NOTNULL="false" SEQUENCE="false" COMMENT="0=ignored, 1=accessed, NULL=pending"/>
+        <FIELD NAME="response_time" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_user_course" UNIQUE="false" FIELDS="userid, courseid"/>
+        <INDEX NAME="idx_decision_type" UNIQUE="false" FIELDS="decision_type"/>
+        <INDEX NAME="idx_timecreated" UNIQUE="false" FIELDS="timecreated"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================================================ -->
+    <!-- Table: acmls_leaderboard                                      -->
+    <!-- Menyimpan data peringkat Learner berdasarkan metrik gabungan  -->
+    <!-- kehadiran, keterlibatan, dan penyelesaian aktivitas.          -->
+    <!-- ============================================================ -->
+    <TABLE NAME="acmls_leaderboard" COMMENT="Data peringkat Learner berdasarkan metrik gabungan kehadiran, keterlibatan, dan penyelesaian">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="scope" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="course" SEQUENCE="false" COMMENT="course, program, institution"/>
+        <FIELD NAME="attendance_score" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="engagement_score" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="completion_score" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="total_score" TYPE="number" LENGTH="7" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="current_rank" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="previous_rank" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="rank_change" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Positif=naik, negatif=turun"/>
+        <FIELD NAME="points_to_next" TYPE="number" LENGTH="7" DECIMALS="2" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="display_name" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Nama anonim jika privasi diaktifkan"/>
+        <FIELD NAME="last_updated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="uq_user_course_scope" UNIQUE="true" FIELDS="userid, courseid, scope"/>
+        <INDEX NAME="idx_rank" UNIQUE="false" FIELDS="courseid, scope, current_rank"/>
+        <INDEX NAME="idx_score" UNIQUE="false" FIELDS="total_score"/>
+        <INDEX NAME="idx_last_updated" UNIQUE="false" FIELDS="last_updated"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================================================ -->
+    <!-- Table: acmls_data_access_log                                 -->
+    <!-- Menyimpan log setiap akses ke data Learner_Record:           -->
+    <!-- identitas pengakses, waktu akses, dan data yang diakses.     -->
+    <!-- Memenuhi Persyaratan 15.4 (log akses data untuk audit).      -->
+    <!-- ============================================================ -->
+    <TABLE NAME="acmls_data_access_log" COMMENT="Log akses data Learner_Record untuk keperluan audit keamanan">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="accessor_userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK ke mdl_user.id — pengguna yang mengakses data"/>
+        <FIELD NAME="target_userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK ke mdl_user.id — pemilik data yang diakses"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK ke mdl_course.id"/>
+        <FIELD NAME="access_type" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="query_longitudinal, export_csv, export_json"/>
+        <FIELD NAME="record_type_filter" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Filter record_type yang digunakan, jika ada"/>
+        <FIELD NAME="source_component_filter" TYPE="char" LENGTH="50" NOTNULL="false" SEQUENCE="false" COMMENT="Filter source_component yang digunakan, jika ada"/>
+        <FIELD NAME="records_returned" TYPE="int" LENGTH="10" NOTNULL="false" DEFAULT="0" SEQUENCE="false" COMMENT="Jumlah record yang dikembalikan"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Unix timestamp saat akses terjadi"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_accessor" UNIQUE="false" FIELDS="accessor_userid"/>
+        <INDEX NAME="idx_target" UNIQUE="false" FIELDS="target_userid"/>
+        <INDEX NAME="idx_courseid" UNIQUE="false" FIELDS="courseid"/>
+        <INDEX NAME="idx_access_type" UNIQUE="false" FIELDS="access_type"/>
+        <INDEX NAME="idx_timecreated" UNIQUE="false" FIELDS="timecreated"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================================================ -->
+    <!-- Table: acmls_config_audit_log                                -->
+    <!-- Menyimpan log audit setiap perubahan konfigurasi oleh        -->
+    <!-- administrator: siapa, kapan, apa yang diubah.                -->
+    <!-- Memenuhi Persyaratan 13.3 (log audit konfigurasi).           -->
+    <!-- ============================================================ -->
+    <TABLE NAME="acmls_config_audit_log" COMMENT="Log audit perubahan konfigurasi ACMLS oleh administrator">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK ke mdl_user.id — administrator yang melakukan perubahan"/>
+        <FIELD NAME="setting_name" TYPE="char" LENGTH="255" NOTNULL="true" SEQUENCE="false" COMMENT="Nama lengkap konfigurasi, e.g. block_attendanceleaderboard/llm_provider"/>
+        <FIELD NAME="old_value" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Nilai sebelum perubahan"/>
+        <FIELD NAME="new_value" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Nilai setelah perubahan"/>
+        <FIELD NAME="context" TYPE="char" LENGTH="255" NOTNULL="false" DEFAULT="" SEQUENCE="false" COMMENT="Konteks opsional, e.g. admin_settings_page"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Unix timestamp saat perubahan dicatat"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_userid" UNIQUE="false" FIELDS="userid"/>
+        <INDEX NAME="idx_setting_name" UNIQUE="false" FIELDS="setting_name"/>
+        <INDEX NAME="idx_timecreated" UNIQUE="false" FIELDS="timecreated"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================================================ -->
+    <!-- Table: acmls_motivation_feedback                             -->
+    <!-- Menyimpan respons perasaan Learner setelah menerima popup    -->
+    <!-- motivasi untuk keperluan penelitian dan analitik.            -->
+    <!-- ============================================================ -->
+    <TABLE NAME="acmls_motivation_feedback" COMMENT="Respons perasaan Learner setelah menerima popup motivasi">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK ke mdl_user.id"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK ke mdl_course.id"/>
+        <FIELD NAME="sentenceid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK opsional ke acmls_motivation_sentence.id"/>
+        <FIELD NAME="category" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="" SEQUENCE="false"/>
+        <FIELD NAME="source" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="" SEQUENCE="false"/>
+        <FIELD NAME="feeling_key" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="very_motivated, motivated, neutral, confused, discouraged"/>
+        <FIELD NAME="feeling_score" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="reflection_note" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
+        <FIELD NAME="message_content" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="idx_user_course" UNIQUE="false" FIELDS="userid, courseid"/>
+        <INDEX NAME="idx_sentenceid" UNIQUE="false" FIELDS="sentenceid"/>
+        <INDEX NAME="idx_feeling_key" UNIQUE="false" FIELDS="feeling_key"/>
+        <INDEX NAME="idx_timecreated" UNIQUE="false" FIELDS="timecreated"/>
+      </INDEXES>
+    </TABLE>
+
+    <!-- ============================================================ -->
+    <!-- Table: acmls_learner_consent                                  -->
+    <!-- Menyimpan status persetujuan Learner untuk pengiriman data    -->
+    <!-- ke layanan LLM eksternal. Memenuhi Persyaratan 15.5.          -->
+    <!-- ============================================================ -->
+    <TABLE NAME="acmls_learner_consent" COMMENT="Status persetujuan Learner untuk pengiriman data ke layanan LLM eksternal">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="userid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK ke mdl_user.id"/>
+        <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="FK ke mdl_course.id"/>
+        <FIELD NAME="consent_given" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="1=setuju, 0=tolak"/>
+        <FIELD NAME="consent_timestamp" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Unix timestamp saat persetujuan diberikan"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Unix timestamp saat record dibuat"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Unix timestamp saat record terakhir dimodifikasi"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="uq_user_course" UNIQUE="true" FIELDS="userid, courseid"/>
+        <INDEX NAME="idx_consent_given" UNIQUE="false" FIELDS="consent_given"/>
+        <INDEX NAME="idx_timecreated" UNIQUE="false" FIELDS="timecreated"/>
+      </INDEXES>
+    </TABLE>
+
+  </TABLES>
+</XMLDB>

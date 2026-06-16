@@ -1,0 +1,2 @@
+﻿# generator script
+pass
