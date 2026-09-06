@@ -345,14 +345,19 @@ class motivation_component {
     public function record_emotional_feedback(int $userid, int $courseid, array $feedback): int {
         global $DB;
 
-        $feelingkey = (string) ($feedback['feeling_key'] ?? '');
-        if (!array_key_exists($feelingkey, self::FEELING_SCORES)) {
-            throw new \invalid_parameter_exception('Invalid feeling_key provided.');
-        }
+        $e1 = isset($feedback['e1']) ? max(1, min(5, (int) $feedback['e1'])) : 3;
+        $e2 = isset($feedback['e2']) ? max(1, min(5, (int) $feedback['e2'])) : 3;
+        $e3 = isset($feedback['e3']) ? max(1, min(5, (int) $feedback['e3'])) : 3;
 
-        $feelingscore = isset($feedback['feeling_score']) && is_numeric($feedback['feeling_score'])
-            ? (int) $feedback['feeling_score']
-            : self::FEELING_SCORES[$feelingkey];
+        $avgscore = (int) round(($e1 + $e2 + $e3) / 3.0);
+        $feelingkeys = [
+            5 => 'very_motivated',
+            4 => 'motivated',
+            3 => 'neutral',
+            2 => 'confused',
+            1 => 'discouraged',
+        ];
+        $feelingkey = $feelingkeys[$avgscore] ?? 'neutral';
 
         $record = new \stdClass();
         $record->userid = $userid;
@@ -361,7 +366,10 @@ class motivation_component {
         $record->category = (string) ($feedback['category'] ?? '');
         $record->source = (string) ($feedback['source'] ?? '');
         $record->feeling_key = $feelingkey;
-        $record->feeling_score = $feelingscore;
+        $record->feeling_score = $avgscore;
+        $record->e1_val = $e1;
+        $record->e2_val = $e2;
+        $record->e3_val = $e3;
         $record->reflection_note = isset($feedback['reflection_note']) ? trim((string) $feedback['reflection_note']) : null;
         $record->message_content = (string) ($feedback['message_content'] ?? '');
         $record->timecreated = time();
@@ -375,6 +383,9 @@ class motivation_component {
             'source' => $record->source,
             'feeling_key' => $record->feeling_key,
             'feeling_score' => $record->feeling_score,
+            'e1_val' => $e1,
+            'e2_val' => $e2,
+            'e3_val' => $e3,
             'reflection_note' => $record->reflection_note,
         ];
 
@@ -390,6 +401,20 @@ class motivation_component {
         $DB->insert_record(self::TABLE_LEARNER_RECORD, $history);
 
         $this->record_learner_response($userid, $courseid, self::RESPONSE_ENGAGED);
+
+        // Update profile in Profiling System.
+        if (class_exists('\block_attendanceleaderboard\profiling\profiling_system')) {
+            try {
+                $profiler = new \block_attendanceleaderboard\profiling\profiling_system();
+                $profiler->update_profile($userid, $courseid, [
+                    'e1' => $e1,
+                    'e2' => $e2,
+                    'e3' => $e3,
+                ]);
+            } catch (\Throwable $e) {
+                debugging('record_emotional_feedback: Profiling system update failed: ' . $e->getMessage(), DEBUG_DEVELOPER);
+            }
+        }
 
         return $feedbackid;
     }

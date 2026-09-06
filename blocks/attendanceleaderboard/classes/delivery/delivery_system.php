@@ -117,14 +117,16 @@ class delivery_system {
                 'category_label' => $this->get_category_label($category),
                 'sentenceid' => $sentenceid ?? 0,
                 'source' => $source,
-                'feelings' => $this->get_feeling_options(),
+                'likert_options' => $this->get_likert_options(),
                 'str_popup_title' => get_string('motivation_popup_title', 'block_attendanceleaderboard'),
                 'str_popup_body' => get_string('motivation_popup_body', 'block_attendanceleaderboard'),
-                'str_feeling_prompt' => get_string('motivation_feeling_prompt', 'block_attendanceleaderboard'),
+                'str_e1_prompt' => get_string('motivation_e1_prompt', 'block_attendanceleaderboard'),
+                'str_e2_prompt' => get_string('motivation_e2_prompt', 'block_attendanceleaderboard'),
+                'str_e3_prompt' => get_string('motivation_e3_prompt', 'block_attendanceleaderboard'),
                 'str_reflection_label' => get_string('motivation_reflection_label', 'block_attendanceleaderboard'),
                 'str_reflection_placeholder' => get_string('motivation_reflection_placeholder', 'block_attendanceleaderboard'),
                 'str_submit' => get_string('motivation_submit', 'block_attendanceleaderboard'),
-                'str_required' => get_string('motivation_feeling_required', 'block_attendanceleaderboard'),
+                'str_required' => get_string('motivation_feedback_required', 'block_attendanceleaderboard'),
                 'str_research_notice' => get_string('motivation_research_notice', 'block_attendanceleaderboard'),
             ]
         );
@@ -411,23 +413,34 @@ class delivery_system {
                 : 1;
 
             $message = [];
-            $record = $repository->find_relevant_record(
-                $userid,
-                $motivation_category,
-                $performance_target,
-                $motivation_target
-            );
 
-            if ($record) {
-                $message = [
-                    'messageid' => (int) $record->id,
-                    'content' => (string) $record->content,
-                    'category' => $motivation_category,
-                    'source' => (string) $record->source,
-                ];
-            } else if ($profile) {
+            // Check if Gemini is configured.
+            $apikey = (string) (get_config('block_attendanceleaderboard', 'gemini_apikey') ?? '');
+            if (!empty($apikey) && $profile) {
                 $generator = \block_attendanceleaderboard\motivation\llm_preparation::build_from_config($repository);
                 $message = $generator->generate_encouragement_record($profile, $motivation_category);
+            }
+
+            // Fallback to static template if Gemini failed or is not configured
+            if (empty($message['content'])) {
+                $record = $repository->find_relevant_record(
+                    $userid,
+                    $motivation_category,
+                    $performance_target,
+                    $motivation_target
+                );
+
+                if ($record) {
+                    $message = [
+                        'messageid' => (int) $record->id,
+                        'content' => (string) $record->content,
+                        'category' => $motivation_category,
+                        'source' => (string) $record->source,
+                    ];
+                } else if ($profile) {
+                    $generator = \block_attendanceleaderboard\motivation\llm_preparation::build_from_config($repository);
+                    $message = $generator->generate_encouragement_record($profile, $motivation_category);
+                }
             }
 
             if (!empty($message['content'])) {
@@ -505,36 +518,31 @@ class delivery_system {
     }
 
     /**
-     * Return the popup feeling options.
+     * Return the Likert scale feedback options (1 to 5).
      *
      * @return array<int,array<string,mixed>>
      */
-    private function get_feeling_options(): array {
+    private function get_likert_options(): array {
         return [
             [
-                'key' => 'very_motivated',
                 'score' => 5,
-                'label' => get_string('motivation_feeling_very_motivated', 'block_attendanceleaderboard'),
+                'label' => get_string('motivation_likert_5', 'block_attendanceleaderboard'),
             ],
             [
-                'key' => 'motivated',
                 'score' => 4,
-                'label' => get_string('motivation_feeling_motivated', 'block_attendanceleaderboard'),
+                'label' => get_string('motivation_likert_4', 'block_attendanceleaderboard'),
             ],
             [
-                'key' => 'neutral',
                 'score' => 3,
-                'label' => get_string('motivation_feeling_neutral', 'block_attendanceleaderboard'),
+                'label' => get_string('motivation_likert_3', 'block_attendanceleaderboard'),
             ],
             [
-                'key' => 'confused',
                 'score' => 2,
-                'label' => get_string('motivation_feeling_confused', 'block_attendanceleaderboard'),
+                'label' => get_string('motivation_likert_2', 'block_attendanceleaderboard'),
             ],
             [
-                'key' => 'discouraged',
                 'score' => 1,
-                'label' => get_string('motivation_feeling_discouraged', 'block_attendanceleaderboard'),
+                'label' => get_string('motivation_likert_1', 'block_attendanceleaderboard'),
             ],
         ];
     }

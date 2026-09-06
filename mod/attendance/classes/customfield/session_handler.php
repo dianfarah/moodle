@@ -36,7 +36,7 @@ use core_customfield\field_controller;
  */
 class session_handler extends \core_customfield\handler {
     /** @var session_handler  */
-    static protected $singleton;
+    protected static $singleton;
     /** @var \context */
     protected $parentcontext;
     /** @var int Field is visible to everybody */
@@ -169,35 +169,15 @@ class session_handler extends \core_customfield\handler {
         $visibilityoptions = [self::VISIBLETOALL => get_string('customfield_visibletoall', 'core_course'),
             self::VISIBLETOTEACHERS => get_string('customfield_visibletoteachers', 'core_course'),
             self::NOTVISIBLE => get_string('customfield_notvisible', 'core_course'), ];
-        $mform->addElement('select', 'configdata[visibility]', get_string('customfield_visibility', 'core_course'),
-            $visibilityoptions);
+        $mform->addElement(
+            'select',
+            'configdata[visibility]',
+            get_string('customfield_visibility', 'core_course'),
+            $visibilityoptions
+        );
         $mform->addHelpButton('configdata[visibility]', 'customfield_visibility', 'core_course');
     }
 
-    /**
-     * Attendance session form a bit non-standard, use custom function to populate array of existing data.
-     *
-     * Example:
-     *   $instance = $DB->get_record(...);
-     *   // .... prepare editor, filemanager, add tags, etc.
-     *   $handler->instance_form_before_set_data($instance);
-     *   $form->set_data($instance);
-     *
-     * @param array $instance the instance that has custom fields, if 'id' attribute is present the custom
-     *    fields for this instance will be added, otherwise the default values will be added.
-     * @return array
-     */
-    public function instance_form_before_set_data_array(array $instance) {
-        $instanceid = !empty($instance['id']) ? $instance['id'] : 0;
-        $fields = api::get_instance_fields_data($this->get_editable_fields($instanceid), $instanceid);
-
-        foreach ($fields as $formfield) {
-            foreach ($fields as $formfield) {
-                $instance[$formfield->get_form_element_name()] = $formfield->get_value();
-            }
-        }
-        return $instance;
-    }
     /**
      * Get list of custom fields that contain data in this attendance activity (hides fields that do not store anything)
      *
@@ -278,4 +258,3 @@ class session_handler extends \core_customfield\handler {
         }
     }
 }
-

@@ -175,54 +175,73 @@ class profiling_system {
             $profile = new learner_profile($userid, $courseid);
         }
 
-        // Step 2: Update performance_category if a score is provided.
-        if (isset($metrics['score']) && is_numeric($metrics['score'])) {
-            $profile->performance_category = $this->classify_performance_category(
-                (float) $metrics['score']
-            );
-            // Mirror performance category to cognitive level as a simple heuristic.
-            $profile->cognitive_level = $profile->performance_category;
+        // --- 1. Behavioral Engagement (b) ---
+        $b1_count = 0;
+        $b1_score = $this->compute_b1_score($userid, $courseid, $b1_count);
+        $profile->b1_access_count = $b1_count;
+
+        $b2_count = 0;
+        $b2_score = $this->compute_b2_score($userid, $courseid, $b2_count);
+        $profile->b2_completion_count = $b2_count;
+
+        $b3_count = 0;
+        $b3_score = $this->compute_b3_score($userid, $courseid, $b3_count);
+        $profile->b3_punctual_count = $b3_count;
+
+        $behavioral_score = ($b1_score * 0.3) + ($b2_score * 0.4) + ($b3_score * 0.3);
+        $profile->behavioral_score = round($behavioral_score, 2);
+
+        // --- 2. Cognitive Engagement (c) ---
+        $c1_avg = 0.0;
+        $c1_score = $this->compute_c1_score($userid, $courseid, $c1_avg);
+        $profile->c1_quiz_avg = $c1_avg;
+
+        $c2_count = 0;
+        $c2_score = $this->compute_c2_score($userid, $courseid, $c2_count);
+        $profile->c2_quiz_attempts = $c2_count;
+
+        $cognitive_score = ($c1_score * 0.7) + ($c2_score * 0.3);
+        $profile->cognitive_score = round($cognitive_score, 2);
+        $profile->cognitive_level = $this->classify_performance_category($cognitive_score);
+
+        // --- 3. Emotional Engagement (e) ---
+        if (isset($metrics['e1']) && isset($metrics['e2']) && isset($metrics['e3'])) {
+            $e1_val = (float) $metrics['e1'];
+            $e2_val = (float) $metrics['e2'];
+            $e3_val = (float) $metrics['e3'];
+
+            // Map 1-5 scale to 0-100 scale (value * 20.0).
+            $profile->e1_score = $this->calculate_motivation_level($e1_val * 20.0, $profile->e1_score, $this->alpha);
+            $profile->e2_score = $this->calculate_motivation_level($e2_val * 20.0, $profile->e2_score, $this->alpha);
+            $profile->e3_score = $this->calculate_motivation_level($e3_val * 20.0, $profile->e3_score, $this->alpha);
+            $profile->emotional_score = round(($profile->e1_score + $profile->e2_score + $profile->e3_score) / 3.0, 2);
+        } else if ($profile->emotional_score == 0.0) {
+            // Default emotional metrics if never set before.
+            $profile->e1_score = 50.0;
+            $profile->e2_score = 50.0;
+            $profile->e3_score = 50.0;
+            $profile->emotional_score = 50.0;
         }
 
-        // Step 3: Update motivation_level using weighted moving average.
-        if (isset($metrics['score']) && is_numeric($metrics['score'])) {
-            $recent_data = (float) $metrics['score'];
-            $profile->motivation_level = $this->calculate_motivation_level(
-                $recent_data,
-                $profile->motivation_level,
-                $this->alpha
-            );
-        }
+        // --- 4. Engagement Score (overall composite of behavioral + cognitive) ---
+        // Let's set the composite engagement_score as 50% behavioral + 50% cognitive.
+        $profile->engagement_score = round(($profile->behavioral_score * 0.5) + ($profile->cognitive_score * 0.5), 2);
 
-        // Step 4: Update learning_style from resource interaction data.
+        // --- 5. Motivation Level ---
+        // Formula: Motivation_Level = (Behavioral_Score * 0.4) + (Cognitive_Score * 0.4) + (Emotional_Score * 0.2)
+        $motivation_level = ($profile->behavioral_score * 0.4) + ($profile->cognitive_score * 0.4) + ($profile->emotional_score * 0.2);
+        $profile->motivation_level = round($motivation_level, 2);
+        $profile->performance_category = $this->classify_performance_category($profile->motivation_level);
+
+        // Step 4: Update learning style (optional but kept).
         if (!empty($metrics['interactions']) && is_array($metrics['interactions'])) {
             $profile->learning_style = $this->classify_learning_style($metrics['interactions']);
         } elseif (!empty($metrics['resource_type'])) {
-            // Single resource type — build a minimal interactions array.
             $profile->learning_style = $this->classify_learning_style([$metrics['resource_type']]);
         }
 
-        // Step 5: Update engagement_score from duration data.
-        if (isset($metrics['duration_seconds']) && $metrics['duration_seconds'] > 0) {
-            // Normalise duration to a 0–100 engagement score.
-            // 3600 seconds (1 hour) = 100 points; clamped to [0, 100].
-            $duration_score = min(100.0, ($metrics['duration_seconds'] / 3600.0) * 100.0);
-            $profile->engagement_score = $this->calculate_motivation_level(
-                $duration_score,
-                $profile->engagement_score,
-                $this->alpha
-            );
-        }
-
-        // Update behavioral_score as a composite of engagement and performance.
-        $profile->behavioral_score = round(
-            ($profile->engagement_score * 0.4) + ($profile->motivation_level * 0.6),
-            2
-        );
-
         // Step 6: Increment version and update timestamp.
         if ($record) {
-            // Only increment version on actual updates (not initial creation).
             $profile->profile_version++;
         }
         $profile->last_updated = time();
@@ -429,5 +448,164 @@ class profiling_system {
         }
 
         return $history;
+    }
+
+    /**
+     * Compute b1 access count and return b1 score.
+     */
+    private function compute_b1_score(int $userid, int $courseid, &$access_count): float {
+        global $DB;
+        $access_count = $DB->count_records_select(
+            self::TABLE_RECORD,
+            'userid = ? AND courseid = ? AND record_type = ?',
+            [$userid, $courseid, 'interaction']
+        );
+        // Add logins from activity log
+        $access_count += $DB->count_records('acmls_activity_log', [
+            'userid' => $userid,
+            'courseid' => $courseid,
+            'event_type' => 'user_loggedin',
+        ]);
+        return min(100.0, ($access_count / 20.0) * 100.0);
+    }
+
+    /**
+     * Compute b2 completion count and return b2 score.
+     */
+    private function compute_b2_score(int $userid, int $courseid, &$completion_count): float {
+        global $DB;
+
+        $total_trackable = $DB->count_records_sql("
+            SELECT COUNT(*) 
+              FROM {course_modules} cm
+             WHERE cm.course = :courseid 
+               AND cm.completion > 0
+        ", ['courseid' => $courseid]);
+
+        $completion_count = $DB->count_records_sql("
+            SELECT COUNT(*)
+              FROM {course_modules_completion} cmc
+              JOIN {course_modules} cm ON cmc.coursemoduleid = cm.id
+             WHERE cmc.userid = :userid
+               AND cm.course = :courseid
+               AND cmc.completionstate = 1
+        ", ['userid' => $userid, 'courseid' => $courseid]);
+
+        return ($total_trackable > 0) ? min(100.0, ($completion_count / $total_trackable) * 100.0) : 100.0;
+    }
+
+    /**
+     * Compute b3 punctuality and return b3 score.
+     */
+    private function compute_b3_score(int $userid, int $courseid, &$punctual_count): float {
+        global $DB;
+
+        // Fetch all assignments in the course with a valid due date.
+        $assignments = $DB->get_records('assign', ['course' => $courseid], '', 'id, duedate');
+        if (empty($assignments)) {
+            $punctual_count = 0;
+            return 100.0;
+        }
+
+        $punctual_count = 0;
+        $active_assigns = 0;
+
+        foreach ($assignments as $assign) {
+            $duedate = (int) $assign->duedate;
+            if ($duedate <= 0) {
+                continue;
+            }
+            $active_assigns++;
+
+            // Check if student has submitted.
+            $submission = $DB->get_record('assign_submission', [
+                'assignment' => $assign->id,
+                'userid' => $userid,
+                'status' => 'submitted',
+            ], 'timemodified');
+
+            if ($submission) {
+                if ((int) $submission->timemodified <= $duedate) {
+                    $punctual_count++;
+                }
+            }
+        }
+
+        if ($active_assigns === 0) {
+            return 100.0;
+        }
+
+        return min(100.0, ($punctual_count / $active_assigns) * 100.0);
+    }
+
+    /**
+     * Compute c1 quiz average and return c1 score.
+     */
+    private function compute_c1_score(int $userid, int $courseid, &$quiz_avg): float {
+        global $DB;
+
+        $grades = $DB->get_records_sql("
+            SELECT qg.id, qg.grade, q.grade as maxgrade
+              FROM {quiz_grades} qg
+              JOIN {quiz} q ON qg.quiz = q.id
+             WHERE q.course = :courseid
+               AND qg.userid = :userid
+        ", ['courseid' => $courseid, 'userid' => $userid]);
+
+        if (empty($grades)) {
+            $quiz_avg = 0.0;
+            return 100.0; // Default if no quizzes
+        }
+
+        $total_pct = 0.0;
+        foreach ($grades as $g) {
+            $max = (float) $g->maxgrade;
+            $grade = (float) $g->grade;
+            if ($max > 0) {
+                $total_pct += ($grade / $max) * 100.0;
+            }
+        }
+
+        $quiz_avg = round($total_pct / count($grades), 2);
+        return $quiz_avg;
+    }
+
+    /**
+     * Compute c2 quiz attempts and return c2 score.
+     */
+    private function compute_c2_score(int $userid, int $courseid, &$total_attempts): float {
+        global $DB;
+
+        // Get total attempts count across all quizzes in the course for this user.
+        $attempts = $DB->get_records_sql("
+            SELECT quiz, COUNT(*) as attempts_count
+              FROM {quiz_attempts}
+             WHERE userid = :userid
+               AND state = 'finished'
+             GROUP BY quiz
+        ", ['userid' => $userid]);
+
+        if (empty($attempts)) {
+            $total_attempts = 0;
+            return 100.0;
+        }
+
+        $total_attempts = 0;
+        $scores = [];
+        foreach ($attempts as $att) {
+            $count = (int) $att->attempts_count;
+            $total_attempts += $count;
+            if ($count === 1) {
+                $scores[] = 100.0;
+            } else if ($count === 2) {
+                $scores[] = 75.0;
+            } else if ($count === 3) {
+                $scores[] = 50.0;
+            } else {
+                $scores[] = 25.0;
+            }
+        }
+
+        return round(array_sum($scores) / count($scores), 2);
     }
 }

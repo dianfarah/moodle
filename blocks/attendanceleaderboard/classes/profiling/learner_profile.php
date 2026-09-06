@@ -145,6 +145,36 @@ class learner_profile {
     /** @var float Engagement score (0.00–100.00). */
     public float $engagement_score = 0.0;
 
+    /** @var int Frequency of Moodle access (b1). */
+    public int $b1_access_count = 0;
+
+    /** @var int Completed activities count (b2). */
+    public int $b2_completion_count = 0;
+
+    /** @var int On-time assignment submissions (b3). */
+    public int $b3_punctual_count = 0;
+
+    /** @var float Average quiz score (c1). */
+    public float $c1_quiz_avg = 0.0;
+
+    /** @var int Quiz attempts count (c2). */
+    public int $c2_quiz_attempts = 0;
+
+    /** @var float e1 emotional score (motivation to continue). */
+    public float $e1_score = 0.0;
+
+    /** @var float e2 emotional score (self-confidence). */
+    public float $e2_score = 0.0;
+
+    /** @var float e3 emotional score (feeling supported). */
+    public float $e3_score = 0.0;
+
+    /** @var float Overall emotional score. */
+    public float $emotional_score = 0.0;
+
+    /** @var float Overall cognitive score. */
+    public float $cognitive_score = 0.0;
+
     /**
      * @var int Profile version.
      * Starts at 1 and increments on each update.
@@ -196,6 +226,16 @@ class learner_profile {
             'learning_style'       => $this->learning_style,
             'behavioral_score'     => $this->behavioral_score,
             'engagement_score'     => $this->engagement_score,
+            'b1_access_count'      => $this->b1_access_count,
+            'b2_completion_count'  => $this->b2_completion_count,
+            'b3_punctual_count'    => $this->b3_punctual_count,
+            'c1_quiz_avg'          => $this->c1_quiz_avg,
+            'c2_quiz_attempts'     => $this->c2_quiz_attempts,
+            'e1_score'             => $this->e1_score,
+            'e2_score'             => $this->e2_score,
+            'e3_score'             => $this->e3_score,
+            'emotional_score'      => $this->emotional_score,
+            'cognitive_score'      => $this->cognitive_score,
             'profile_version'      => $this->profile_version,
             'last_updated'         => $this->last_updated,
             'created_at'           => $this->created_at,
@@ -225,6 +265,16 @@ class learner_profile {
         $record->learning_style       = $this->learning_style;
         $record->behavioral_score     = $this->behavioral_score;
         $record->engagement_score     = $this->engagement_score;
+        $record->b1_access_count      = $this->b1_access_count;
+        $record->b2_completion_count  = $this->b2_completion_count;
+        $record->b3_punctual_count    = $this->b3_punctual_count;
+        $record->c1_quiz_avg          = $this->c1_quiz_avg;
+        $record->c2_quiz_attempts     = $this->c2_quiz_attempts;
+        $record->e1_score             = $this->e1_score;
+        $record->e2_score             = $this->e2_score;
+        $record->e3_score             = $this->e3_score;
+        $record->emotional_score      = $this->emotional_score;
+        $record->cognitive_score      = $this->cognitive_score;
         $record->profile_version      = $this->profile_version;
         $record->last_updated         = $this->last_updated;
         $record->created_at           = $this->created_at;
@@ -251,6 +301,16 @@ class learner_profile {
         $profile->learning_style       = (string) ($record->learning_style ?? self::STYLE_UNKNOWN);
         $profile->behavioral_score     = (float) ($record->behavioral_score ?? 0.0);
         $profile->engagement_score     = (float) ($record->engagement_score ?? 0.0);
+        $profile->b1_access_count      = (int) ($record->b1_access_count ?? 0);
+        $profile->b2_completion_count  = (int) ($record->b2_completion_count ?? 0);
+        $profile->b3_punctual_count    = (int) ($record->b3_punctual_count ?? 0);
+        $profile->c1_quiz_avg          = (float) ($record->c1_quiz_avg ?? 0.0);
+        $profile->c2_quiz_attempts     = (int) ($record->c2_quiz_attempts ?? 0);
+        $profile->e1_score             = (float) ($record->e1_score ?? 0.0);
+        $profile->e2_score             = (float) ($record->e2_score ?? 0.0);
+        $profile->e3_score             = (float) ($record->e3_score ?? 0.0);
+        $profile->emotional_score      = (float) ($record->emotional_score ?? 0.0);
+        $profile->cognitive_score      = (float) ($record->cognitive_score ?? 0.0);
         $profile->profile_version      = (int) ($record->profile_version ?? 1);
         $profile->last_updated         = (int) ($record->last_updated ?? time());
         $profile->created_at           = (int) ($record->created_at ?? time());

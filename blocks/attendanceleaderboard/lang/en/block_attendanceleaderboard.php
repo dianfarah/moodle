@@ -399,19 +399,29 @@ $string['privacy:metadata:acmls_learner_consent:timecreated']        = 'The time
 $string['privacy:metadata:acmls_learner_consent:timemodified']       = 'The timestamp when this consent record was last modified.';
 
 // Motivation popup and research feedback.
-$string['motivation_popup_title'] = 'Motivation Check-In';
-$string['motivation_popup_body'] = 'Please read the message below, then tell us how you feel after receiving it.';
-$string['motivation_feeling_prompt'] = 'How do you feel after reading this message?';
-$string['motivation_reflection_label'] = 'Short reflection (optional)';
-$string['motivation_reflection_placeholder'] = 'Describe your reaction in one or two sentences.';
-$string['motivation_submit'] = 'Submit response';
-$string['motivation_feeling_required'] = 'Please choose one feeling before submitting your response.';
-$string['motivation_research_notice'] = 'Your response will be stored for intervention evaluation and research analysis.';
-$string['motivation_feeling_very_motivated'] = 'Very motivated';
-$string['motivation_feeling_motivated'] = 'Motivated';
-$string['motivation_feeling_neutral'] = 'Neutral';
-$string['motivation_feeling_confused'] = 'Confused';
-$string['motivation_feeling_discouraged'] = 'Discouraged';
+$string['motivation_popup_title'] = 'Check-In Motivasi';
+$string['motivation_popup_body'] = 'Silakan baca pesan di bawah ini, lalu beri tahu kami tanggapan Anda setelah menerimanya.';
+$string['motivation_feeling_prompt'] = 'Bagaimana perasaan Anda setelah membaca pesan ini?';
+$string['motivation_reflection_label'] = 'Refleksi singkat (opsional)';
+$string['motivation_reflection_placeholder'] = 'Ceritakan reaksi Anda dalam satu atau dua kalimat.';
+$string['motivation_submit'] = 'Kirim respons';
+$string['motivation_feeling_required'] = 'Silakan pilih respons sebelum mengirim.';
+$string['motivation_research_notice'] = 'Respons Anda akan disimpan untuk evaluasi intervensi dan analisis motivasi.';
+$string['motivation_feeling_very_motivated'] = '😍 Sangat Menerima';
+$string['motivation_feeling_motivated'] = '😊 Menerima';
+$string['motivation_feeling_neutral'] = '😐 Netral';
+$string['motivation_feeling_confused'] = '🙁 Tidak Menerima';
+$string['motivation_feeling_discouraged'] = '😠 Sangat Tidak Menerima';
+
+$string['motivation_e1_prompt'] = 'Saya termotivasi untuk melanjutkan pembelajaran ini.';
+$string['motivation_e2_prompt'] = 'Saya merasa percaya diri dengan kemampuan saya.';
+$string['motivation_e3_prompt'] = 'Saya merasa didukung dalam proses belajar ini.';
+$string['motivation_likert_1'] = '😠 Sangat Tidak Menerima';
+$string['motivation_likert_2'] = '🙁 Tidak Menerima';
+$string['motivation_likert_3'] = '😐 Netral';
+$string['motivation_likert_4'] = '😊 Menerima';
+$string['motivation_likert_5'] = '😍 Sangat Menerima';
+$string['motivation_feedback_required'] = 'Silakan jawab ketiga pertanyaan sebelum mengirim respons.';
 
 // Privacy metadata - acmls_motivation_feedback.
 $string['privacy:metadata:acmls_motivation_feedback'] = 'Stores each learner response to a motivational popup, including feeling selection and optional reflection text.';

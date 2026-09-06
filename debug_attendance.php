@@ -2,6 +2,7 @@
 define('CLI_SCRIPT', true);
 require_once('config.php');
 require_once($CFG->libdir.'/blocklib.php');
+require_once($CFG->dirroot.'/blocks/moodleblock.class.php');
 
 // Error reporting
 error_reporting(E_ALL);

@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'block_attendanceleaderboard';
-$plugin->version   = 2026060801; // Recovery migration for missing ACMLS base tables plus Gemini motivation flow.
+$plugin->version   = 2026062901; // Behavioral, cognitive, and emotional engagement tracking flow.
 $plugin->requires  = 2023100900; // Moodle 4.3+
 $plugin->maturity  = MATURITY_ALPHA;
 $plugin->release   = '0.5.1';

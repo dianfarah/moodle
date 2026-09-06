@@ -30,31 +30,63 @@
             <p class="acmls-motivation-popup__helper">{{str_popup_body}}</p>
 
             <form class="acmls-motivation-feedback-form" novalidate>
-                <fieldset class="acmls-motivation-popup__fieldset">
-                    <legend class="acmls-motivation-popup__legend">{{str_feeling_prompt}}</legend>
-                    <div class="acmls-motivation-popup__options">
-                        {{#feelings}}
-                        <label class="acmls-motivation-popup__option">
-                            <input type="radio"
-                                   name="acmls-feeling-{{userid}}-{{sentenceid}}"
-                                   value="{{key}}"
-                                   data-score="{{score}}">
-                            <span>{{label}}</span>
-                        </label>
-                        {{/feelings}}
-                    </div>
-                </fieldset>
+                <div class="acmls-motivation-popup__questions">
+                    <fieldset class="acmls-motivation-popup__fieldset mb-3 border p-2">
+                        <legend class="acmls-motivation-popup__legend h6 px-2">{{str_e1_prompt}}</legend>
+                        <div class="acmls-motivation-popup__options d-flex justify-content-between flex-wrap px-2">
+                            {{#likert_options}}
+                            <label class="acmls-motivation-popup__option mr-3">
+                                <input type="radio"
+                                       name="acmls-e1-{{userid}}-{{sentenceid}}"
+                                       value="{{score}}"
+                                       data-score="{{score}}">
+                                <span class="ml-1">{{label}}</span>
+                            </label>
+                            {{/likert_options}}
+                        </div>
+                    </fieldset>
 
-                <label class="acmls-motivation-popup__note">
+                    <fieldset class="acmls-motivation-popup__fieldset mb-3 border p-2">
+                        <legend class="acmls-motivation-popup__legend h6 px-2">{{str_e2_prompt}}</legend>
+                        <div class="acmls-motivation-popup__options d-flex justify-content-between flex-wrap px-2">
+                            {{#likert_options}}
+                            <label class="acmls-motivation-popup__option mr-3">
+                                <input type="radio"
+                                       name="acmls-e2-{{userid}}-{{sentenceid}}"
+                                       value="{{score}}"
+                                       data-score="{{score}}">
+                                <span class="ml-1">{{label}}</span>
+                            </label>
+                            {{/likert_options}}
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="acmls-motivation-popup__fieldset mb-3 border p-2">
+                        <legend class="acmls-motivation-popup__legend h6 px-2">{{str_e3_prompt}}</legend>
+                        <div class="acmls-motivation-popup__options d-flex justify-content-between flex-wrap px-2">
+                            {{#likert_options}}
+                            <label class="acmls-motivation-popup__option mr-3">
+                                <input type="radio"
+                                       name="acmls-e3-{{userid}}-{{sentenceid}}"
+                                       value="{{score}}"
+                                       data-score="{{score}}">
+                                <span class="ml-1">{{label}}</span>
+                            </label>
+                            {{/likert_options}}
+                        </div>
+                    </fieldset>
+                </div>
+
+                <label class="acmls-motivation-popup__note mt-3 w-100">
                     <span>{{str_reflection_label}}</span>
                     <textarea class="form-control"
-                              name="reflection_note"
-                              rows="3"
-                              maxlength="500"
-                              placeholder="{{str_reflection_placeholder}}"></textarea>
+                               name="reflection_note"
+                               rows="3"
+                               maxlength="500"
+                               placeholder="{{str_reflection_placeholder}}"></textarea>
                 </label>
 
-                <p class="acmls-motivation-popup__required d-none">{{str_required}}</p>
+                <p class="acmls-motivation-popup__required text-danger d-none">{{str_required}}</p>
                 <p class="acmls-motivation-popup__notice">{{str_research_notice}}</p>
 
                 <button type="submit" class="btn btn-primary acmls-motivation-popup__submit">

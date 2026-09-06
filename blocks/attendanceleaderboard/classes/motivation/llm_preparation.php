@@ -147,13 +147,13 @@ class llm_preparation {
             $content = $this->call_with_retry($prompt);
 
             if (!$this->validate_content($content)) {
-                debugging('llm_preparation: generated content failed validation, using fallback.', DEBUG_DEVELOPER);
+                error_log('llm_preparation: generated content failed validation, using fallback.');
                 return $this->fallback_to_template_record($category, $profile->performance_category);
             }
 
             $contenthash = md5($content);
             if ($this->repository->check_duplicate($profile->userid, $contenthash, self::DUPLICATE_WINDOW_DAYS)) {
-                debugging('llm_preparation: duplicate content detected, using fallback.', DEBUG_DEVELOPER);
+                error_log('llm_preparation: duplicate content detected, using fallback.');
                 return $this->fallback_to_template_record($category, $profile->performance_category);
             }
 
@@ -174,12 +174,12 @@ class llm_preparation {
                 'llm_model' => $this->get_current_model_name(),
             ];
         } catch (llm_timeout_exception $e) {
-            debugging('llm_preparation: Gemini request timed out - ' . $e->getMessage(), DEBUG_DEVELOPER);
+            error_log('llm_preparation: Gemini request timed out - ' . $e->getMessage());
         } catch (llm_auth_exception $e) {
-            debugging('llm_preparation: Gemini authentication error - ' . $e->getMessage(), DEBUG_NORMAL);
+            error_log('llm_preparation: Gemini authentication error - ' . $e->getMessage());
             $this->notify_admin_auth_error($e->getMessage());
         } catch (\Throwable $e) {
-            debugging('llm_preparation: unexpected generation error - ' . $e->getMessage(), DEBUG_DEVELOPER);
+            error_log('llm_preparation: unexpected generation error - ' . $e->getMessage());
         }
 
         return $this->fallback_to_template_record($category, $profile->performance_category);
@@ -210,6 +210,17 @@ class llm_preparation {
             'learning_style' => $profile->learning_style,
             'cognitive_level' => $profile->cognitive_level,
             'engagement_score' => $roundedengagement,
+            'b1_access_count' => $profile->b1_access_count,
+            'b2_completion_count' => $profile->b2_completion_count,
+            'b3_punctual_count' => $profile->b3_punctual_count,
+            'behavioral_score' => round($profile->behavioral_score),
+            'c1_quiz_avg' => round($profile->c1_quiz_avg),
+            'c2_quiz_attempts' => $profile->c2_quiz_attempts,
+            'cognitive_score' => round($profile->cognitive_score),
+            'e1_score' => round($profile->e1_score),
+            'e2_score' => round($profile->e2_score),
+            'e3_score' => round($profile->e3_score),
+            'emotional_score' => round($profile->emotional_score),
         ];
     }
 
@@ -325,16 +336,38 @@ class llm_preparation {
     private function build_prompt(array $anon_profile, string $category): string {
         $performancelabel = $this->performance_category_label((int) ($anon_profile['performance_category'] ?? 1));
         $motivationlabel = $this->motivation_level_label((float) ($anon_profile['motivation_level'] ?? 50.0));
-        $context = $this->build_context_description($anon_profile, $category);
+        
+        $b_desc = "Keterlibatan Perilaku (Behavioral - b): " .
+                  "Akses Moodle: {$anon_profile['b1_access_count']} kali, " .
+                  "Penyelesaian Aktivitas: {$anon_profile['b2_completion_count']} aktivitas, " .
+                  "Ketepatan Tugas: {$anon_profile['b3_punctual_count']} tugas tepat waktu. " .
+                  "Skor Perilaku keseluruhan: {$anon_profile['behavioral_score']}/100.";
+                  
+        $c_desc = "Keterlibatan Kognitif (Cognitive - c): " .
+                  "Rata-rata Nilai Kuis: {$anon_profile['c1_quiz_avg']}/100, " .
+                  "Percobaan Kuis: {$anon_profile['c2_quiz_attempts']} kali. " .
+                  "Skor Kognitif keseluruhan: {$anon_profile['cognitive_score']}/100.";
+                  
+        $e_desc = "Keterlibatan Emosional (Emotional - e): " .
+                  "Skor Motivasi Belajar: {$anon_profile['e1_score']}/100, " .
+                  "Skor Kepercayaan Diri: {$anon_profile['e2_score']}/100, " .
+                  "Skor Rasa Didukung: {$anon_profile['e3_score']}/100. " .
+                  "Skor Emosional keseluruhan: {$anon_profile['emotional_score']}/100.";
 
-        return "Anda adalah asisten motivasional akademik. Hasilkan satu kalimat motivasional\n" .
-            "dalam bahasa Indonesia formal untuk mahasiswa dengan kondisi berikut:\n" .
+        return "Anda adalah asisten motivasional akademik personal. Hasilkan satu kalimat motivasional\n" .
+            "dalam bahasa Indonesia formal yang sangat personal untuk seorang mahasiswa berdasarkan parameter keterlibatan berikut:\n\n" .
+            "KONDISI MAHASISWA:\n" .
             "- Kategori performa: {$performancelabel}\n" .
-            "- Tingkat motivasi: {$motivationlabel}\n" .
+            "- Tingkat motivasi: {$motivationlabel} (Skor gabungan: {$anon_profile['motivation_level']}/100)\n" .
             "- Kategori intervensi: {$category}\n" .
-            "- Konteks: {$context}\n\n" .
-            "Kalimat harus singkat (1-2 kalimat), positif, akademik, mendukung semangat belajar,\n" .
-            "dan tidak mengandung informasi yang menyesatkan.";
+            "- {$b_desc}\n" .
+            "- {$c_desc}\n" .
+            "- {$e_desc}\n\n" .
+            "ATURAN GENERASI:\n" .
+            "1. Hasilkan kalimat yang secara spesifik menyinggung kekuatan mereka atau memberikan dorongan pada area yang kurang.\n" .
+            "2. Kalimat harus singkat (1-2 kalimat), positif, akademik, dan mendukung semangat belajar.\n" .
+            "3. JANGAN sebutkan nama-nama variabel teknis (seperti 'b1', 'c2', dll.) secara langsung, sebutkan secara alami (misal: 'ketepatan pengumpulan tugas Anda' atau 'semangat Anda yang tinggi dalam mengerjakan kuis').\n" .
+            "4. Gunakan bahasa Indonesia yang santun, formal, inspiratif, dan menyemangati.";
     }
 
     /**

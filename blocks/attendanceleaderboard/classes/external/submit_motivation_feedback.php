@@ -46,8 +46,9 @@ class submit_motivation_feedback extends \external_api {
             'category' => new \external_value(PARAM_TEXT, 'Motivation category'),
             'source' => new \external_value(PARAM_TEXT, 'Message source'),
             'message_content' => new \external_value(PARAM_TEXT, 'Delivered message content'),
-            'feeling_key' => new \external_value(PARAM_ALPHANUMEXT, 'Selected feeling key'),
-            'feeling_score' => new \external_value(PARAM_INT, 'Feeling score'),
+            'e1' => new \external_value(PARAM_INT, 'Motivation to continue'),
+            'e2' => new \external_value(PARAM_INT, 'Self-confidence score'),
+            'e3' => new \external_value(PARAM_INT, 'Feeling supported score'),
             'reflection_note' => new \external_value(PARAM_TEXT, 'Optional reflection note', VALUE_DEFAULT, ''),
         ]);
     }
@@ -61,8 +62,9 @@ class submit_motivation_feedback extends \external_api {
      * @param string $category Motivation category.
      * @param string $source Message source.
      * @param string $message_content Delivered message content.
-     * @param string $feeling_key Selected feeling key.
-     * @param int $feeling_score Feeling score.
+     * @param int $e1 Motivation to continue score (1-5).
+     * @param int $e2 Self-confidence score (1-5).
+     * @param int $e3 Feeling supported score (1-5).
      * @param string $reflection_note Optional reflection note.
      * @return array<string,mixed>
      */
@@ -73,8 +75,9 @@ class submit_motivation_feedback extends \external_api {
         string $category = '',
         string $source = '',
         string $message_content = '',
-        string $feeling_key = '',
-        int $feeling_score = 0,
+        int $e1 = 0,
+        int $e2 = 0,
+        int $e3 = 0,
         string $reflection_note = ''
     ): array {
         global $USER;
@@ -86,8 +89,9 @@ class submit_motivation_feedback extends \external_api {
             'category' => $category,
             'source' => $source,
             'message_content' => $message_content,
-            'feeling_key' => $feeling_key,
-            'feeling_score' => $feeling_score,
+            'e1' => $e1,
+            'e2' => $e2,
+            'e3' => $e3,
             'reflection_note' => $reflection_note,
         ]);
 
@@ -110,8 +114,9 @@ class submit_motivation_feedback extends \external_api {
                     'category' => (string) $params['category'],
                     'source' => (string) $params['source'],
                     'message_content' => (string) $params['message_content'],
-                    'feeling_key' => (string) $params['feeling_key'],
-                    'feeling_score' => (int) $params['feeling_score'],
+                    'e1' => (int) $params['e1'],
+                    'e2' => (int) $params['e2'],
+                    'e3' => (int) $params['e3'],
                     'reflection_note' => (string) $params['reflection_note'],
                 ]
             );

@@ -1,0 +1,278 @@
+/* Adaptive Learning AI Report Styling */
+
+.adaptive-learning-ai-teacher-report {
+    padding: 20px 0;
+}
+
+.alai-report-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.alai-report-header h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 600;
+    color: white;
+}
+
+.alai-report-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background-color: #f8f9fa;
+    padding: 30px;
+    border-radius: 8px;
+}
+
+/* Chart Section */
+.alai-chart-section {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid #667eea;
+}
+
+.alai-section-title {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 10px;
+}
+
+.alai-chart-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    overflow-x: auto;
+}
+
+.alai-chart-wrapper canvas {
+    max-width: 100%;
+    min-width: 600px;
+    height: auto;
+    max-height: 400px;
+}
+
+/* Student List Section */
+.alai-list-title {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 10px;
+}
+
+/* Tables */
+.alai-students-table,
+.alai-attempts-table,
+.alai-responses-table {
+    background: white;
+    border-collapse: collapse;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    width: 100%;
+}
+
+.alai-students-table thead,
+.alai-attempts-table thead,
+.alai-responses-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.alai-students-table thead th,
+.alai-attempts-table thead th,
+.alai-responses-table thead th {
+    padding: 15px 12px;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: none;
+}
+
+.alai-students-table tbody tr,
+.alai-attempts-table tbody tr,
+.alai-responses-table tbody tr {
+    border-bottom: 1px solid #e8eef5;
+    transition: background-color 0.2s;
+}
+
+.alai-students-table tbody tr:hover,
+.alai-attempts-table tbody tr:hover,
+.alai-responses-table tbody tr:hover {
+    background-color: #f0f4ff;
+}
+
+.alai-students-table td,
+.alai-attempts-table td,
+.alai-responses-table td {
+    padding: 12px 12px;
+    color: #333;
+}
+
+.alai-students-table a,
+.alai-attempts-table a {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.alai-students-table a:hover,
+.alai-attempts-table a:hover {
+    color: #764ba2;
+    text-decoration: underline;
+}
+
+/* Student Detail Section */
+.alai-student-name {
+    font-size: 22px;
+    font-weight: 600;
+    color: #667eea;
+    margin-top: 30px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #667eea;
+}
+
+.alai-detail-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+    margin-top: 25px;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Back Button */
+.alai-back-button-wrapper {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid #e8eef5;
+}
+
+.alai-back-button-wrapper .btn {
+    background-color: #667eea;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background-color 0.2s;
+    display: inline-block;
+}
+
+.alai-back-button-wrapper .btn:hover {
+    background-color: #764ba2;
+}
+
+.alai-back-button-wrapper .btn-secondary {
+    background-color: #6c757d;
+}
+
+.alai-back-button-wrapper .btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* Alert Styling */
+.alert {
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border-left: 4px solid #17a2b8;
+    color: #0c5460;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    color: #856404;
+}
+
+/* Student Detail Chart */
+.alai-student-chart-section {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-left: 4px solid #28a745;
+}
+
+.alai-student-chart-title {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #28a745;
+    padding-bottom: 8px;
+}
+
+.alai-student-chart-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    overflow-x: auto;
+}
+
+.alai-student-chart-wrapper canvas {
+    max-width: 100%;
+    min-width: 500px;
+    height: auto;
+    max-height: 300px;
+}
+    .alai-report-container {
+        padding: 15px;
+    }
+
+    .alai-report-header {
+        padding: 20px 15px;
+    }
+
+    .alai-report-header h1 {
+        font-size: 22px;
+    }
+
+    .alai-section-title {
+        font-size: 18px;
+    }
+
+    .alai-students-table,
+    .alai-attempts-table,
+    .alai-responses-table {
+        font-size: 14px;
+    }
+
+    .alai-students-table td,
+    .alai-attempts-table td,
+    .alai-responses-table td {
+        padding: 10px 8px;
+    }
+
+    .alai-students-table thead th,
+    .alai-attempts-table thead th,
+    .alai-responses-table thead th {
+        padding: 12px 8px;
+        font-size: 13px;
+    }
+}

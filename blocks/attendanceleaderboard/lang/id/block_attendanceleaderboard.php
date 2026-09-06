@@ -413,6 +413,16 @@ $string['motivation_feeling_neutral'] = 'Netral';
 $string['motivation_feeling_confused'] = 'Bingung';
 $string['motivation_feeling_discouraged'] = 'Kurang bersemangat';
 
+$string['motivation_e1_prompt'] = 'Saya termotivasi untuk melanjutkan pembelajaran ini.';
+$string['motivation_e2_prompt'] = 'Saya merasa percaya diri dengan kemampuan saya.';
+$string['motivation_e3_prompt'] = 'Saya merasa didukung dalam proses belajar ini.';
+$string['motivation_likert_1'] = 'Sangat Tidak Menerima';
+$string['motivation_likert_2'] = 'Tidak Menerima';
+$string['motivation_likert_3'] = 'Netral';
+$string['motivation_likert_4'] = 'Menerima';
+$string['motivation_likert_5'] = 'Sangat Menerima';
+$string['motivation_feedback_required'] = 'Silakan jawab ketiga pertanyaan sebelum mengirim respons.';
+
 // Metadata privasi - acmls_motivation_feedback.
 $string['privacy:metadata:acmls_motivation_feedback'] = 'Menyimpan setiap respons mahasiswa terhadap popup motivasi, termasuk pilihan perasaan dan teks refleksi opsional.';
 $string['privacy:metadata:acmls_motivation_feedback:userid'] = 'ID mahasiswa yang mengirimkan umpan balik motivasi.';

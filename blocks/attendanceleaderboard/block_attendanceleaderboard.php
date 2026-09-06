@@ -115,9 +115,8 @@ class block_attendanceleaderboard extends block_base {
             $this->content->text = $this->render_block_content($USER->id, $COURSE->id, $context);
         } catch (Throwable $e) {
             // Graceful degradation: log the error and show a minimal fallback.
-            debugging(
-                'block_attendanceleaderboard: Failed to render block content — ' . $e->getMessage(),
-                DEBUG_DEVELOPER
+            error_log(
+                'block_attendanceleaderboard: Failed to render block content — ' . $e->getMessage()
             );
             $this->content->text = html_writer::tag(
                 'p',

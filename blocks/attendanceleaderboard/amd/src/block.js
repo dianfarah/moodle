@@ -76,11 +76,20 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
 
             var $form = $(this);
             var $popup = $form.closest('.acmls-motivation-popup');
-            var $selected = $form.find('input[type="radio"]:checked');
+            var sentenceId = Number($popup.data('sentenceid') || 0);
+            
+            var e1_name = 'acmls-e1-' + userid + '-' + sentenceId;
+            var e2_name = 'acmls-e2-' + userid + '-' + sentenceId;
+            var e3_name = 'acmls-e3-' + userid + '-' + sentenceId;
+
+            var $e1_selected = $form.find('input[name="' + e1_name + '"]:checked');
+            var $e2_selected = $form.find('input[name="' + e2_name + '"]:checked');
+            var $e3_selected = $form.find('input[name="' + e3_name + '"]:checked');
+            
             var $required = $form.find('.acmls-motivation-popup__required');
             var $submit = $form.find('.acmls-motivation-popup__submit');
 
-            if (!$selected.length) {
+            if (!$e1_selected.length || !$e2_selected.length || !$e3_selected.length) {
                 $required.removeClass('d-none');
                 return;
             }
@@ -91,12 +100,13 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
             submitMotivationFeedback({
                 userid: userid,
                 courseid: courseid,
-                sentenceid: Number($popup.data('sentenceid') || 0),
+                sentenceid: sentenceId,
                 category: $popup.data('category') || '',
                 source: $popup.data('source') || '',
                 message_content: $popup.data('content') || '',
-                feeling_key: $selected.val(),
-                feeling_score: Number($selected.data('score') || 0),
+                e1: Number($e1_selected.val() || 0),
+                e2: Number($e2_selected.val() || 0),
+                e3: Number($e3_selected.val() || 0),
                 reflection_note: $form.find('textarea[name="reflection_note"]').val() || ''
             }).done(function() {
                 $popup.removeClass('is-visible').addClass('is-submitted');

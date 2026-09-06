@@ -20,6 +20,16 @@
         <FIELD NAME="learning_style" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="unknown" SEQUENCE="false"/>
         <FIELD NAME="behavioral_score" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
         <FIELD NAME="engagement_score" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="b1_access_count" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Frequency of Moodle access"/>
+        <FIELD NAME="b2_completion_count" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Completed activities count"/>
+        <FIELD NAME="b3_punctual_count" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="On-time assignment submissions"/>
+        <FIELD NAME="c1_quiz_avg" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Average quiz score"/>
+        <FIELD NAME="c2_quiz_attempts" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Quiz attempts count"/>
+        <FIELD NAME="e1_score" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Motivation to continue learning"/>
+        <FIELD NAME="e2_score" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Self-confidence score"/>
+        <FIELD NAME="e3_score" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Feeling supported score"/>
+        <FIELD NAME="emotional_score" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Overall emotional score"/>
+        <FIELD NAME="cognitive_score" TYPE="number" LENGTH="5" DECIMALS="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Overall cognitive score"/>
         <FIELD NAME="profile_version" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="1" SEQUENCE="false"/>
         <FIELD NAME="last_updated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Unix timestamp"/>
         <FIELD NAME="created_at" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Unix timestamp"/>
@@ -284,8 +294,11 @@
         <FIELD NAME="sentenceid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="FK opsional ke acmls_motivation_sentence.id"/>
         <FIELD NAME="category" TYPE="char" LENGTH="50" NOTNULL="true" DEFAULT="" SEQUENCE="false"/>
         <FIELD NAME="source" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="" SEQUENCE="false"/>
-        <FIELD NAME="feeling_key" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="very_motivated, motivated, neutral, confused, discouraged"/>
+        <FIELD NAME="feeling_key" TYPE="char" LENGTH="50" NOTNULL="true" SEQUENCE="false" COMMENT="very_motivated, motivated, neutral, discouraged, etc."/>
         <FIELD NAME="feeling_score" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="e1_val" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="e1: motivation to continue"/>
+        <FIELD NAME="e2_val" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="e2: self-confidence"/>
+        <FIELD NAME="e3_val" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="e3: feeling supported"/>
         <FIELD NAME="reflection_note" TYPE="text" NOTNULL="false" SEQUENCE="false"/>
         <FIELD NAME="message_content" TYPE="text" NOTNULL="true" SEQUENCE="false"/>
         <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false"/>

@@ -364,5 +364,47 @@ function xmldb_block_attendanceleaderboard_upgrade($oldversion) {
         upgrade_block_savepoint(true, 2026060801, 'attendanceleaderboard');
     }
 
+    // ----------------------------------------------------------------
+    // Upgrade to 2026062901 - add behavioral, cognitive, emotional fields.
+    // ----------------------------------------------------------------
+    if ($oldversion < 2026062901) {
+        $table = new xmldb_table('acmls_learner_profile');
+        $fields_to_add = [
+            'b1_access_count' => [XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0'],
+            'b2_completion_count' => [XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0'],
+            'b3_punctual_count' => [XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0'],
+            'c1_quiz_avg' => [XMLDB_TYPE_NUMBER, '5, 2', null, XMLDB_NOTNULL, null, '0'],
+            'c2_quiz_attempts' => [XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0'],
+            'e1_score' => [XMLDB_TYPE_NUMBER, '5, 2', null, XMLDB_NOTNULL, null, '0'],
+            'e2_score' => [XMLDB_TYPE_NUMBER, '5, 2', null, XMLDB_NOTNULL, null, '0'],
+            'e3_score' => [XMLDB_TYPE_NUMBER, '5, 2', null, XMLDB_NOTNULL, null, '0'],
+            'emotional_score' => [XMLDB_TYPE_NUMBER, '5, 2', null, XMLDB_NOTNULL, null, '0'],
+            'cognitive_score' => [XMLDB_TYPE_NUMBER, '5, 2', null, XMLDB_NOTNULL, null, '0'],
+        ];
+
+        foreach ($fields_to_add as $fieldname => $spec) {
+            $field = new xmldb_field($fieldname, $spec[0], $spec[1], $spec[2], $spec[3], $spec[4], $spec[5]);
+            if (!$dbman->field_exists($table, $field)) {
+                $dbman->add_field($table, $field);
+            }
+        }
+
+        $table_feedback = new xmldb_table('acmls_motivation_feedback');
+        $feedback_fields = [
+            'e1_val' => [XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0'],
+            'e2_val' => [XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0'],
+            'e3_val' => [XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0'],
+        ];
+
+        foreach ($feedback_fields as $fieldname => $spec) {
+            $field = new xmldb_field($fieldname, $spec[0], $spec[1], $spec[2], $spec[3], $spec[4], $spec[5]);
+            if (!$dbman->field_exists($table_feedback, $field)) {
+                $dbman->add_field($table_feedback, $field);
+            }
+        }
+
+        upgrade_block_savepoint(true, 2026062901, 'attendanceleaderboard');
+    }
+
     return true;
 }
