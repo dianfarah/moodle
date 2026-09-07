@@ -56,11 +56,12 @@ class block_attendanceleaderboard extends block_base {
      */
     public function applicable_formats(): array {
         return [
-            'all'          => false,
+            'all'          => true,
             'site'         => true,
             'site-index'   => true,
             'course-view'  => true,
             'course'       => true,
+            'mod'          => true,
             'my'           => true,
         ];
     }

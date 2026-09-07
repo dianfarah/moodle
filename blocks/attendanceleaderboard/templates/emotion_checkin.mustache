@@ -1,0 +1,101 @@
+{{!
+    @template block_attendanceleaderboard/emotion_checkin
+
+    Emotional readiness check-in popup before learning starts.
+    Collects e1, e2, e3 ratings and optional reflection note.
+}}
+<div class="acmls-motivation-popup acmls-emotion-popup is-visible"
+     data-userid="{{userid}}"
+     data-courseid="{{courseid}}"
+     data-category="checkin"
+     data-source="initial_checkin">
+    <div class="acmls-motivation-popup__backdrop"></div>
+    <div class="acmls-motivation-popup__dialog"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="acmls-emotion-title-{{userid}}">
+        <div class="acmls-motivation-popup__header">
+            <div>
+                <p class="acmls-motivation-popup__eyebrow">{{str_popup_title}}</p>
+                <h3 id="acmls-emotion-title-{{userid}}" class="acmls-motivation-popup__title">
+                    {{str_popup_subtitle}}
+                </h3>
+            </div>
+        </div>
+
+        <div class="acmls-motivation-popup__body">
+            <form class="acmls-emotion-checkin-form" novalidate>
+                <div class="acmls-motivation-popup__questions">
+                    <fieldset class="acmls-motivation-popup__fieldset mb-3 border p-3 rounded">
+                        <legend class="acmls-motivation-popup__legend h6 px-2 font-weight-bold">{{str_e1_prompt}}</legend>
+                        <div class="acmls-motivation-popup__options d-flex justify-content-between flex-wrap px-2">
+                            {{#likert_options}}
+                            <label class="acmls-motivation-popup__option mr-2 mb-2">
+                                <input type="radio"
+                                       name="acmls-e1-{{userid}}"
+                                       value="{{score}}"
+                                       data-score="{{score}}">
+                                <span class="ml-1">{{label}}</span>
+                            </label>
+                            {{/likert_options}}
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="acmls-motivation-popup__fieldset mb-3 border p-3 rounded">
+                        <legend class="acmls-motivation-popup__legend h6 px-2 font-weight-bold">{{str_e2_prompt}}</legend>
+                        <div class="acmls-motivation-popup__options d-flex justify-content-between flex-wrap px-2">
+                            {{#likert_options}}
+                            <label class="acmls-motivation-popup__option mr-2 mb-2">
+                                <input type="radio"
+                                       name="acmls-e2-{{userid}}"
+                                       value="{{score}}"
+                                       data-score="{{score}}">
+                                <span class="ml-1">{{label}}</span>
+                            </label>
+                            {{/likert_options}}
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="acmls-motivation-popup__fieldset mb-3 border p-3 rounded">
+                        <legend class="acmls-motivation-popup__legend h6 px-2 font-weight-bold">{{str_e3_prompt}}</legend>
+                        <div class="acmls-motivation-popup__options d-flex justify-content-between flex-wrap px-2">
+                            {{#likert_options}}
+                            <label class="acmls-motivation-popup__option mr-2 mb-2">
+                                <input type="radio"
+                                       name="acmls-e3-{{userid}}"
+                                       value="{{score}}"
+                                       data-score="{{score}}">
+                                <span class="ml-1">{{label}}</span>
+                            </label>
+                            {{/likert_options}}
+                        </div>
+                    </fieldset>
+                </div>
+
+                <label class="acmls-motivation-popup__note mt-2 w-100">
+                    <span class="font-weight-bold">{{str_reflection_label}}</span>
+                    <textarea class="form-control"
+                               name="reflection_note"
+                               rows="2"
+                               maxlength="500"
+                               placeholder="{{str_reflection_placeholder}}"></textarea>
+                </label>
+
+                <p class="acmls-motivation-popup__required text-danger d-none">{{str_required}}</p>
+                <p class="acmls-motivation-popup__notice small text-muted">{{str_research_notice}}</p>
+
+                <button type="submit" class="btn btn-primary btn-lg w-100 acmls-emotion-popup__submit">
+                    {{str_submit}}
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    (function() {
+        var el = document.querySelector('.acmls-emotion-popup');
+        if (el && el.parentNode !== document.body) {
+            document.body.appendChild(el);
+        }
+    })();
+</script>

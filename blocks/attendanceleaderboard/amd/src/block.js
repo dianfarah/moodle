@@ -71,6 +71,70 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
             });
         });
 
+        // Handle submit emotion check-in form.
+        $(document).on('submit', '.acmls-emotion-checkin-form', function(e) {
+            e.preventDefault();
+
+            var $form = $(this);
+            var $popup = $form.closest('.acmls-motivation-popup');
+            
+            var e1_name = 'acmls-e1-' + userid;
+            var e2_name = 'acmls-e2-' + userid;
+            var e3_name = 'acmls-e3-' + userid;
+
+            var $e1_selected = $form.find('input[name="' + e1_name + '"]:checked');
+            var $e2_selected = $form.find('input[name="' + e2_name + '"]:checked');
+            var $e3_selected = $form.find('input[name="' + e3_name + '"]:checked');
+            
+            var $required = $form.find('.acmls-motivation-popup__required');
+            var $submit = $form.find('.acmls-emotion-popup__submit');
+
+            if (!$e1_selected.length || !$e2_selected.length || !$e3_selected.length) {
+                $required.removeClass('d-none');
+                return;
+            }
+
+            $required.addClass('d-none');
+            $submit.prop('disabled', true);
+
+            submitMotivationFeedback({
+                userid: userid,
+                courseid: courseid,
+                sentenceid: 0,
+                category: 'checkin',
+                source: 'initial_checkin',
+                message_content: 'Check-In Kesiapan Emosi Awal',
+                e1: Number($e1_selected.val() || 0),
+                e2: Number($e2_selected.val() || 0),
+                e3: Number($e3_selected.val() || 0),
+                reflection_note: $form.find('textarea[name="reflection_note"]').val() || ''
+            }).done(function() {
+                $popup.removeClass('is-visible').addClass('is-submitted');
+                window.setTimeout(function() {
+                    $popup.remove();
+                }, 250);
+            }).fail(function(err) {
+                $submit.prop('disabled', false);
+                Notification.exception(err);
+            });
+        });
+
+        // Handle dismiss post-quiz motivation.
+        $(document).on('click', '.acmls-quiz-motivation__dismiss', function(e) {
+            e.preventDefault();
+            var $popup = $(this).closest('.acmls-quiz-motivation-popup');
+            var recordId = Number($popup.data('recordid') || 0);
+
+            recordInteraction(userid, courseid, 'quiz_motivation_dismissed', {
+                recordid: recordId
+            });
+
+            $popup.removeClass('is-visible').addClass('is-submitted');
+            window.setTimeout(function() {
+                $popup.remove();
+            }, 250);
+        });
+
         $(document).on('submit', '.acmls-motivation-feedback-form', function(e) {
             e.preventDefault();
 

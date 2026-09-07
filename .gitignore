@@ -1,0 +1,7 @@
+# Ignore AICode module and zip archives
+mod/aicode/
+blocks/aicode.zip
+
+# Ignore temporary debug scripts
+test_*.php
+scratch/

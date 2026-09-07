@@ -106,10 +106,10 @@ class llm_preparation {
      */
     public static function build_provider_from_config(): ?llm_provider_interface {
         $apikey = (string) (get_config('block_attendanceleaderboard', 'gemini_apikey') ?? '');
-        $model = (string) (get_config('block_attendanceleaderboard', 'gemini_model') ?? 'gemini-3.5-flash');
+        $model = (string) (get_config('block_attendanceleaderboard', 'gemini_model') ?? 'gemini-1.5-flash');
         $timeout = (int) (get_config('block_attendanceleaderboard', 'coach_response_timeout') ?? 10);
 
-        return new gemini_provider($apikey, $model !== '' ? $model : 'gemini-3.5-flash', max(1, $timeout));
+        return new gemini_provider($apikey, $model !== '' ? $model : 'gemini-1.5-flash', max(1, $timeout));
     }
 
     /**
@@ -576,6 +576,6 @@ class llm_preparation {
         }
 
         $model = (string) (get_config('block_attendanceleaderboard', 'gemini_model') ?? '');
-        return $model !== '' ? $model : 'gemini-3.5-flash';
+        return $model !== '' ? $model : 'gemini-1.5-flash';
     }
 }

@@ -52,7 +52,7 @@ $string['settings_llm_provider_gemini'] = 'Gemini';
 $string['settings_gemini_apikey']       = 'Kunci API Gemini';
 $string['settings_gemini_apikey_desc']  = 'Masukkan kunci API Gemini Anda. Jaga kerahasiaan nilai ini.';
 $string['settings_gemini_model']        = 'Model Gemini';
-$string['settings_gemini_model_desc']   = 'Model Gemini yang akan digunakan untuk menghasilkan konten motivasional (misalnya, gemini-3.5-flash).';
+$string['settings_gemini_model_desc']   = 'Model Gemini yang akan digunakan untuk menghasilkan konten motivasional (misalnya, gemini-1.5-flash).';
 $string['settings_llm_provider_openai'] = 'OpenAI';
 $string['settings_llm_provider_ollama'] = 'Ollama (Lokal)';
 $string['settings_openai_apikey']       = 'Kunci API OpenAI';
@@ -416,12 +416,20 @@ $string['motivation_feeling_discouraged'] = 'Kurang bersemangat';
 $string['motivation_e1_prompt'] = 'Saya termotivasi untuk melanjutkan pembelajaran ini.';
 $string['motivation_e2_prompt'] = 'Saya merasa percaya diri dengan kemampuan saya.';
 $string['motivation_e3_prompt'] = 'Saya merasa didukung dalam proses belajar ini.';
-$string['motivation_likert_1'] = 'Sangat Tidak Menerima';
-$string['motivation_likert_2'] = 'Tidak Menerima';
-$string['motivation_likert_3'] = 'Netral';
-$string['motivation_likert_4'] = 'Menerima';
-$string['motivation_likert_5'] = 'Sangat Menerima';
+$string['motivation_likert_1'] = '😠 Sangat Tidak Menerima';
+$string['motivation_likert_2'] = '🙁 Tidak Menerima';
+$string['motivation_likert_3'] = '😐 Netral';
+$string['motivation_likert_4'] = '😊 Menerima';
+$string['motivation_likert_5'] = '😍 Sangat Menerima';
 $string['motivation_feedback_required'] = 'Silakan jawab ketiga pertanyaan sebelum mengirim respons.';
+
+$string['emotion_checkin_title'] = 'Check-in Kesiapan Emosi';
+$string['emotion_checkin_subtitle'] = 'Sebelum memulai pembelajaran materi dan latihan, sampaikan kesiapan emosi Anda hari ini.';
+$string['emotion_checkin_submit'] = 'Mulai Belajar';
+$string['quiz_motivation_title'] = 'Umpan Balik Motivasi Belajar';
+$string['quiz_motivation_subtitle'] = 'Apresiasi dan Evaluasi Pasca-Kuis';
+$string['quiz_motivation_continue'] = 'Lanjutkan Belajar';
+$string['quiz_motivation_score'] = 'Nilai Kuis Anda: {$a}%';
 
 // Metadata privasi - acmls_motivation_feedback.
 $string['privacy:metadata:acmls_motivation_feedback'] = 'Menyimpan setiap respons mahasiswa terhadap popup motivasi, termasuk pilihan perasaan dan teks refleksi opsional.';

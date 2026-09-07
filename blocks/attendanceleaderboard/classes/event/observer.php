@@ -105,8 +105,117 @@ class observer {
         try {
             $ts = new tracking_system();
             $ts->handle_event($event);
+            self::trigger_quiz_motivation($event);
         } catch (\Exception $e) {
             debugging('ACMLS observer::quiz_attempt_submitted error: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+    }
+
+    /**
+     * Generate and queue a post-quiz motivational encouragement message.
+     *
+     * @param \mod_quiz\event\attempt_submitted $event
+     * @return void
+     */
+    private static function trigger_quiz_motivation(\mod_quiz\event\attempt_submitted $event): void {
+        global $DB;
+
+        try {
+            // Fetch attempt score and student userid.
+            $attempt = $DB->get_record('quiz_attempts', ['id' => $event->objectid]);
+            $userid = (int) ($event->relateduserid ?: $event->userid);
+            if ($attempt && !empty($attempt->userid)) {
+                $userid = (int) $attempt->userid;
+            }
+            $courseid = (int) $event->courseid;
+
+            $quizgrade = null;
+            if ($attempt && isset($attempt->sumgrades)) {
+                $quiz = $DB->get_record('quiz', ['id' => $attempt->quiz]);
+                if ($quiz && (float)$quiz->sumgrades > 0) {
+                    $quizgrade = ((float)$attempt->sumgrades / (float)$quiz->sumgrades) * 100.0;
+                }
+            }
+
+            // Determine motivation category based on quiz performance.
+            if ($quizgrade !== null) {
+                if ($quizgrade >= 70.0) {
+                    $category = 'achievement';
+                } else if ($quizgrade >= 40.0) {
+                    $category = 'reinforcement';
+                } else {
+                    $category = 'recovery';
+                }
+            } else {
+                $category = 'reinforcement';
+            }
+
+            // Get or update learner profile.
+            $profile = null;
+            if (class_exists('\block_attendanceleaderboard\profiling\profiling_system')) {
+                $profiler = new \block_attendanceleaderboard\profiling\profiling_system();
+                $metrics = [];
+                if ($quizgrade !== null) {
+                    $metrics['score'] = $quizgrade;
+                }
+                $profile = $profiler->update_profile($userid, $courseid, $metrics);
+            }
+
+            $message = [];
+            $repository = new \block_attendanceleaderboard\motivation\motivation_sentence_repository();
+
+            // Try LLM / Gemini if configured.
+            $apikey = (string) (get_config('block_attendanceleaderboard', 'gemini_apikey') ?? '');
+            if (!empty($apikey) && $profile && class_exists('\block_attendanceleaderboard\motivation\llm_preparation')) {
+                try {
+                    $generator = \block_attendanceleaderboard\motivation\llm_preparation::build_from_config($repository);
+                    $message = $generator->generate_encouragement_record($profile, $category);
+                } catch (\Throwable $ex) {
+                    debugging('quiz_attempt_submitted LLM error: ' . $ex->getMessage(), DEBUG_DEVELOPER);
+                }
+            }
+
+            // Fallback to static template.
+            if (empty($message['content'])) {
+                $perf_target = $profile ? (int) $profile->performance_category : 2;
+                $mot_target = $profile ? ($profile->motivation_level >= 70 ? 3 : ($profile->motivation_level >= 40 ? 2 : 1)) : 2;
+                $record = $repository->find_relevant_record($userid, $category, $perf_target, $mot_target);
+                if ($record) {
+                    $message = [
+                        'messageid' => (int) $record->id,
+                        'content' => (string) $record->content,
+                        'category' => $category,
+                        'source' => (string) $record->source,
+                    ];
+                } else {
+                    $message = [
+                        'content' => 'Kerja luar biasa! Anda telah menyelesaikan kuis ini. Terus tingkatkan kemampuan dan pertahankan semangat belajar Anda!',
+                        'category' => $category,
+                        'source' => 'system',
+                    ];
+                }
+            }
+
+            // Queue as pending_quiz_motivation in acmls_learner_record.
+            $pending = new \stdClass();
+            $pending->userid = $userid;
+            $pending->courseid = $courseid;
+            $pending->record_type = 'pending_quiz_motivation';
+            $pending->source_component = 'motivation';
+            $pending->data_payload = json_encode([
+                'content' => $message['content'],
+                'category' => $message['category'] ?? $category,
+                'source' => $message['source'] ?? 'system',
+                'quizgrade' => $quizgrade,
+                'timecreated' => time(),
+            ]);
+            $pending->profile_version = $profile ? (int) $profile->profile_version : 0;
+            $pending->timecreated = time();
+
+            $DB->insert_record('acmls_learner_record', $pending);
+
+        } catch (\Throwable $e) {
+            debugging('ACMLS observer::trigger_quiz_motivation error: ' . $e->getMessage(), DEBUG_DEVELOPER);
         }
     }
 

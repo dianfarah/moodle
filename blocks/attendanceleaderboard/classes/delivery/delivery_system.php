@@ -227,6 +227,18 @@ class delivery_system {
 
         $DB->insert_record(self::TABLE_LEARNER_RECORD, $record);
 
+        if ($interaction_type === 'quiz_motivation_dismissed') {
+            try {
+                $DB->set_field(self::TABLE_LEARNER_RECORD, 'record_type', 'delivered_quiz_motivation', [
+                    'userid' => $userid,
+                    'courseid' => $courseid,
+                    'record_type' => 'pending_quiz_motivation',
+                ]);
+            } catch (\Throwable $ex) {
+                // Ignore if records cannot be updated.
+            }
+        }
+
         if (class_exists('\block_attendanceleaderboard\tracking\tracking_system')) {
             try {
                 $tracking = new \block_attendanceleaderboard\tracking\tracking_system();
@@ -313,15 +325,17 @@ class delivery_system {
         $recommendations_html = !empty($resources)
             ? $this->display_resource_recommendations($userid, $resources)
             : '';
-        $encouragement_html = !empty($encouragement['content'])
-            ? $this->display_encouragement(
-                $userid,
-                $courseid,
-                (string) $encouragement['content'],
-                (string) $encouragement['category'],
-                isset($encouragement['messageid']) ? (int) $encouragement['messageid'] : null,
-                (string) ($encouragement['source'] ?? '')
-            )
+
+        // Separate Phase 1 (Emotion check-in) and Phase 5 (Post-quiz motivation).
+        $show_emotion_checkin = $this->should_show_emotion_checkin($userid, $courseid);
+        $pending_quiz_motivation = $this->get_pending_quiz_motivation($userid, $courseid);
+
+        $emotion_checkin_html = $show_emotion_checkin
+            ? $this->display_emotion_checkin($userid, $courseid)
+            : '';
+
+        $quiz_motivation_html = !empty($pending_quiz_motivation)
+            ? $this->display_quiz_motivation($userid, $courseid, $pending_quiz_motivation)
             : '';
 
         $template_data = [
@@ -331,8 +345,12 @@ class delivery_system {
             'leaderboard' => $leaderboard_html,
             'has_recommendations' => $recommendations_html !== '',
             'recommendations' => $recommendations_html,
-            'has_encouragement' => $encouragement_html !== '',
-            'encouragement' => $encouragement_html,
+            'has_encouragement' => false,
+            'encouragement' => '',
+            'has_emotion_checkin' => $emotion_checkin_html !== '',
+            'emotion_checkin' => $emotion_checkin_html,
+            'has_quiz_motivation' => $quiz_motivation_html !== '',
+            'quiz_motivation' => $quiz_motivation_html,
             'show_consent_dialog' => false,
             'consent_dialog' => '',
         ];
@@ -351,6 +369,131 @@ class delivery_system {
         return $OUTPUT->render_from_template(
             'block_attendanceleaderboard/block_content',
             $template_data
+        );
+    }
+
+    /**
+     * Check whether the emotion readiness check-in popup should be shown.
+     *
+     * Shown if the learner has not submitted an emotion check-in within the last 12 hours.
+     *
+     * @param int $userid Moodle user ID.
+     * @param int $courseid Moodle course ID.
+     * @return bool
+     */
+    public function should_show_emotion_checkin(int $userid, int $courseid): bool {
+        global $DB;
+
+        $since = time() - (12 * HOURSECS);
+        $has_feedback = $DB->record_exists_select(
+            'acmls_motivation_feedback',
+            'userid = :userid AND courseid = :courseid AND timecreated >= :since',
+            ['userid' => $userid, 'courseid' => $courseid, 'since' => $since]
+        );
+
+        return !$has_feedback;
+    }
+
+    /**
+     * Render the emotional readiness check-in modal.
+     *
+     * @param int $userid Moodle user ID.
+     * @param int $courseid Moodle course ID.
+     * @return string
+     */
+    public function display_emotion_checkin(int $userid, int $courseid): string {
+        global $OUTPUT;
+
+        return $OUTPUT->render_from_template(
+            'block_attendanceleaderboard/emotion_checkin',
+            [
+                'userid' => $userid,
+                'courseid' => $courseid,
+                'likert_options' => $this->get_likert_options(),
+                'str_popup_title' => get_string('emotion_checkin_title', 'block_attendanceleaderboard'),
+                'str_popup_subtitle' => get_string('emotion_checkin_subtitle', 'block_attendanceleaderboard'),
+                'str_e1_prompt' => get_string('motivation_e1_prompt', 'block_attendanceleaderboard'),
+                'str_e2_prompt' => get_string('motivation_e2_prompt', 'block_attendanceleaderboard'),
+                'str_e3_prompt' => get_string('motivation_e3_prompt', 'block_attendanceleaderboard'),
+                'str_reflection_label' => get_string('motivation_reflection_label', 'block_attendanceleaderboard'),
+                'str_reflection_placeholder' => get_string('motivation_reflection_placeholder', 'block_attendanceleaderboard'),
+                'str_submit' => get_string('emotion_checkin_submit', 'block_attendanceleaderboard'),
+                'str_required' => get_string('motivation_feedback_required', 'block_attendanceleaderboard'),
+                'str_research_notice' => get_string('motivation_research_notice', 'block_attendanceleaderboard'),
+            ]
+        );
+    }
+
+    /**
+     * Retrieve any pending post-quiz motivation message for the learner.
+     *
+     * @param int $userid Moodle user ID.
+     * @param int $courseid Moodle course ID.
+     * @return array|null
+     */
+    public function get_pending_quiz_motivation(int $userid, int $courseid): ?array {
+        global $DB;
+
+        $records = $DB->get_records_select(
+            self::TABLE_LEARNER_RECORD,
+            "userid = :userid AND courseid = :courseid AND record_type = 'pending_quiz_motivation'",
+            ['userid' => $userid, 'courseid' => $courseid],
+            'timecreated DESC',
+            '*',
+            0,
+            1
+        );
+
+        if (empty($records)) {
+            return null;
+        }
+
+        $record = reset($records);
+        $payload = json_decode($record->data_payload, true) ?: [];
+
+        return [
+            'recordid' => (int) $record->id,
+            'content' => (string) ($payload['content'] ?? ''),
+            'category' => (string) ($payload['category'] ?? 'achievement'),
+            'source' => (string) ($payload['source'] ?? 'system'),
+            'quizgrade' => isset($payload['quizgrade']) ? (float) $payload['quizgrade'] : null,
+        ];
+    }
+
+    /**
+     * Render the post-quiz AI motivation popup.
+     *
+     * @param int $userid Moodle user ID.
+     * @param int $courseid Moodle course ID.
+     * @param array $mot Pending motivation data.
+     * @return string
+     */
+    public function display_quiz_motivation(int $userid, int $courseid, array $mot): string {
+        global $OUTPUT;
+
+        $quizgrade = $mot['quizgrade'] ?? null;
+        $has_quizgrade = ($quizgrade !== null);
+        $quizgrade_formatted = $has_quizgrade
+            ? get_string('quiz_motivation_score', 'block_attendanceleaderboard', round($quizgrade, 1))
+            : '';
+
+        return $OUTPUT->render_from_template(
+            'block_attendanceleaderboard/quiz_motivation',
+            [
+                'userid' => $userid,
+                'courseid' => $courseid,
+                'recordid' => $mot['recordid'] ?? 0,
+                'content' => $mot['content'] ?? '',
+                'category' => $mot['category'] ?? '',
+                'category_label' => $this->get_category_label($mot['category'] ?? ''),
+                'source' => $mot['source'] ?? '',
+                'is_gemini' => ($mot['source'] ?? '') === 'gemini',
+                'has_quizgrade' => $has_quizgrade,
+                'quizgrade_formatted' => $quizgrade_formatted,
+                'str_title' => get_string('quiz_motivation_title', 'block_attendanceleaderboard'),
+                'str_subtitle' => get_string('quiz_motivation_subtitle', 'block_attendanceleaderboard'),
+                'str_continue' => get_string('quiz_motivation_continue', 'block_attendanceleaderboard'),
+            ]
         );
     }
 

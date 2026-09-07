@@ -115,7 +115,7 @@ if ($ADMIN->fulltree) {
         'block_attendanceleaderboard/gemini_model',
         get_string('settings_gemini_model', 'block_attendanceleaderboard'),
         get_string('settings_gemini_model_desc', 'block_attendanceleaderboard'),
-        'gemini-3.5-flash',
+        'gemini-1.5-flash',
         PARAM_TEXT,
         null
     ));

@@ -52,7 +52,7 @@ $string['settings_llm_provider_gemini'] = 'Gemini';
 $string['settings_gemini_apikey']       = 'Gemini API Key';
 $string['settings_gemini_apikey_desc']  = 'Enter your Gemini API key. Keep this value secret.';
 $string['settings_gemini_model']        = 'Gemini Model';
-$string['settings_gemini_model_desc']   = 'The Gemini model to use for motivational content generation (for example, gemini-3.5-flash).';
+$string['settings_gemini_model_desc']   = 'The Gemini model to use for motivational content generation (for example, gemini-1.5-flash).';
 $string['settings_llm_provider_openai'] = 'OpenAI';
 $string['settings_llm_provider_ollama'] = 'Ollama (Local)';
 $string['settings_openai_apikey']       = 'OpenAI API Key';
@@ -126,10 +126,10 @@ $string['performance_middle'] = 'Middle';
 $string['performance_high']   = 'High';
 
 // Encouragement content categories.
-$string['encouragement_reinforcement'] = 'Reinforcement';
-$string['encouragement_achievement']   = 'Achievement Prompts';
-$string['encouragement_recovery']      = 'Recovery Encouragement';
-$string['encouragement_persistence']   = 'Persistence Motivation';
+$string['encouragement_reinforcement'] = 'Penguatan Positif';
+$string['encouragement_achievement']   = 'Pencapaian Tinggi';
+$string['encouragement_recovery']      = 'Pemulihan Semangat';
+$string['encouragement_persistence']   = 'Ketekunan Belajar';
 
 // Error messages.
 $string['error_llm_unavailable']    = 'The LLM service is currently unavailable. Using a static template instead.';
@@ -422,6 +422,14 @@ $string['motivation_likert_3'] = '😐 Netral';
 $string['motivation_likert_4'] = '😊 Menerima';
 $string['motivation_likert_5'] = '😍 Sangat Menerima';
 $string['motivation_feedback_required'] = 'Silakan jawab ketiga pertanyaan sebelum mengirim respons.';
+
+$string['emotion_checkin_title'] = 'Check-in Kesiapan Emosi';
+$string['emotion_checkin_subtitle'] = 'Sebelum memulai sesi pembelajaran dan latihan, sampaikan kesiapan emosi Anda hari ini.';
+$string['emotion_checkin_submit'] = 'Mulai Belajar';
+$string['quiz_motivation_title'] = 'Umpan Balik Motivasi Belajar';
+$string['quiz_motivation_subtitle'] = 'Apresiasi dan Evaluasi Pasca-Kuis';
+$string['quiz_motivation_continue'] = 'Lanjutkan Belajar';
+$string['quiz_motivation_score'] = 'Nilai Kuis Anda: {$a}%';
 
 // Privacy metadata - acmls_motivation_feedback.
 $string['privacy:metadata:acmls_motivation_feedback'] = 'Stores each learner response to a motivational popup, including feeling selection and optional reflection text.';

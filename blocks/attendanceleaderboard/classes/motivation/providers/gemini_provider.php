@@ -52,7 +52,7 @@ class gemini_provider implements llm_provider_interface {
      */
     public function __construct(
         string $api_key = '',
-        string $model = 'gemini-3.5-flash',
+        string $model = 'gemini-1.5-flash',
         int $timeout_seconds = 10
     ) {
         $this->api_key = $api_key;
