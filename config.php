@@ -18,7 +18,7 @@ $CFG->dboptions = array (
   'dbcollation' => 'utf8mb4_unicode_ci',
 );
 
-$CFG->wwwroot   = 'http://localhost/moodle';
+$CFG->wwwroot   = 'http://localhost/farah/moodle';
 $CFG->dataroot  = 'C:\\laragon\\moodledata';
 $CFG->admin     = 'admin';
 
@@ -27,6 +27,8 @@ $CFG->noreplyaddress = 'noreply@example.test';
 $CFG->supportemail = 'support@example.test';
 $CFG->supportname = 'Moodle Local';
 $CFG->noemailever = true;
+// Mencegah Whoops mengubah pesan notice debugging menjadi fatal error
+$CFG->debug_developer_debugging_as_error = false;
 
 $CFG->directorypermissions = 0777;
 
