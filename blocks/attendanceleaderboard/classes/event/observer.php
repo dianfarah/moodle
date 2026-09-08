@@ -161,6 +161,29 @@ class observer {
                 $profile = $profiler->update_profile($userid, $courseid, $metrics);
             }
 
+            // Extract student name, quiz material, duration, attendance, and emotion context.
+            $user = $DB->get_record('user', ['id' => $userid], 'id, firstname, lastname');
+            $student_name = $user ? trim($user->firstname) : '';
+            $quiz_name = ($attempt && isset($quiz) && !empty($quiz->name)) ? $quiz->name : 'Kuis Evaluasi';
+
+            $timestart = ($attempt && !empty($attempt->timestart)) ? (int) $attempt->timestart : 0;
+            $timefinish = ($attempt && !empty($attempt->timefinish)) ? (int) $attempt->timefinish : time();
+            $duration_seconds = max(0, $timefinish - $timestart);
+            $duration_text = self::format_duration($duration_seconds);
+
+            $attendance_summary = self::get_attendance_summary($userid, $courseid, $profile);
+            $emotion_summary = self::get_emotion_summary($userid, $courseid, $profile);
+
+            $context_data = [
+                'student_name' => $student_name,
+                'quiz_name' => $quiz_name,
+                'quiz_grade' => $quizgrade,
+                'duration_seconds' => $duration_seconds,
+                'duration_text' => $duration_text,
+                'attendance_summary' => $attendance_summary,
+                'emotion_summary' => $emotion_summary,
+            ];
+
             $message = [];
             $repository = new \block_attendanceleaderboard\motivation\motivation_sentence_repository();
 
@@ -169,7 +192,13 @@ class observer {
             if (!empty($apikey) && $profile && class_exists('\block_attendanceleaderboard\motivation\llm_preparation')) {
                 try {
                     $generator = \block_attendanceleaderboard\motivation\llm_preparation::build_from_config($repository);
-                    $message = $generator->generate_encouragement_record($profile, $category);
+                    $message = $generator->generate_encouragement_record($profile, $category, $context_data);
+                    if ($quizgrade !== null && method_exists($generator, 'generate_suggestion')) {
+                        $llm_sugg = $generator->generate_suggestion($profile, $category, $quizgrade, $context_data);
+                        if (!empty($llm_sugg)) {
+                            $message['suggestion'] = $llm_sugg;
+                        }
+                    }
                 } catch (\Throwable $ex) {
                     debugging('quiz_attempt_submitted LLM error: ' . $ex->getMessage(), DEBUG_DEVELOPER);
                 }
@@ -180,21 +209,26 @@ class observer {
                 $perf_target = $profile ? (int) $profile->performance_category : 2;
                 $mot_target = $profile ? ($profile->motivation_level >= 70 ? 3 : ($profile->motivation_level >= 40 ? 2 : 1)) : 2;
                 $record = $repository->find_relevant_record($userid, $category, $perf_target, $mot_target);
+                $greeting = !empty($student_name) ? "Halo {$student_name}! " : "";
                 if ($record) {
                     $message = [
                         'messageid' => (int) $record->id,
-                        'content' => (string) $record->content,
+                        'content' => $greeting . (string) $record->content,
                         'category' => $category,
                         'source' => (string) $record->source,
                     ];
                 } else {
                     $message = [
-                        'content' => 'Kerja luar biasa! Anda telah menyelesaikan kuis ini. Terus tingkatkan kemampuan dan pertahankan semangat belajar Anda!',
+                        'content' => $greeting . 'Keren banget! Kamu sudah menyelesaikan ' . $quiz_name . '. Terus asah kemampuanmu dan pertahankan semangat belajarmu ya!',
                         'category' => $category,
                         'source' => 'system',
                     ];
                 }
             }
+
+            $suggestion = !empty($message['suggestion'])
+                ? (string) $message['suggestion']
+                : \block_attendanceleaderboard\delivery\delivery_system::get_adaptive_suggestion($profile, $category, $quizgrade, $context_data);
 
             // Queue as pending_quiz_motivation in acmls_learner_record.
             $pending = new \stdClass();
@@ -204,6 +238,7 @@ class observer {
             $pending->source_component = 'motivation';
             $pending->data_payload = json_encode([
                 'content' => $message['content'],
+                'suggestion' => $suggestion,
                 'category' => $message['category'] ?? $category,
                 'source' => $message['source'] ?? 'system',
                 'quizgrade' => $quizgrade,
@@ -216,6 +251,138 @@ class observer {
 
         } catch (\Throwable $e) {
             debugging('ACMLS observer::trigger_quiz_motivation error: ' . $e->getMessage(), DEBUG_DEVELOPER);
+        }
+    }
+
+    /**
+     * Format duration seconds into human readable minutes and seconds.
+     *
+     * @param int $seconds
+     * @return string
+     */
+    private static function format_duration(int $seconds): string {
+        if ($seconds < 60) {
+            return "{$seconds} detik";
+        }
+        $min = floor($seconds / 60);
+        $sec = $seconds % 60;
+        return $sec > 0 ? "{$min} menit {$sec} detik" : "{$min} menit";
+    }
+
+    /**
+     * Summarise course attendance or learning platform activity for the learner.
+     *
+     * @param int $userid
+     * @param int $courseid
+     * @param object|null $profile
+     * @return string
+     */
+    private static function get_attendance_summary(int $userid, int $courseid, ?object $profile = null): string {
+        global $DB;
+        try {
+            $attendances = $DB->get_records('attendance', ['course' => $courseid]);
+            if (!empty($attendances)) {
+                $attendanceids = array_keys($attendances);
+                list($insql, $params) = $DB->get_in_or_equal($attendanceids);
+                $sessions = $DB->get_records_select('attendance_sessions', "attendanceid $insql", $params);
+                if (!empty($sessions)) {
+                    $sessionids = array_keys($sessions);
+                    list($sessinsql, $sessparams) = $DB->get_in_or_equal($sessionids);
+                    $total_sessions = count($sessions);
+
+                    $userparams = array_merge([$userid], $sessparams);
+                    $logs = $DB->get_records_select('attendance_log', "studentid = ? AND sessionid $sessinsql", $userparams);
+                    $attended_count = count($logs);
+                    $pct = $total_sessions > 0 ? round(($attended_count / $total_sessions) * 100) : 0;
+                    return "Kehadiran perkuliahan: {$attended_count} dari {$total_sessions} sesi ({$pct}%)";
+                }
+            }
+        } catch (\Throwable $t) {
+            // Ignore and fallback to profile metrics.
+        }
+
+        if ($profile) {
+            $access = (int) ($profile->b1_access_count ?? 0);
+            $completed = (int) ($profile->b2_completion_count ?? 0);
+            return "Keaktifan platform: {$access} kali akses materi, {$completed} aktivitas tuntas";
+        }
+
+        return "Keaktifan belajar cukup baik";
+    }
+
+    /**
+     * Summarise emotional check-in readiness or emotional dimension for the learner.
+     *
+     * @param int $userid
+     * @param int $courseid
+     * @param object|null $profile
+     * @return string
+     */
+    private static function get_emotion_summary(int $userid, int $courseid, ?object $profile = null): string {
+        global $DB;
+        try {
+            $feedbacks = $DB->get_records_select(
+                'acmls_motivation_feedback',
+                'userid = :userid AND courseid = :courseid',
+                ['userid' => $userid, 'courseid' => $courseid],
+                'timecreated DESC',
+                '*',
+                0,
+                1
+            );
+            if (!empty($feedbacks)) {
+                $fb = reset($feedbacks);
+                $parts = [];
+                if (!empty($fb->e1_val)) {
+                    $parts[] = "Motivasi: " . self::likert_label((int)$fb->e1_val);
+                }
+                if (!empty($fb->e2_val)) {
+                    $parts[] = "Percaya diri: " . self::likert_label((int)$fb->e2_val);
+                }
+                if (!empty($fb->e3_val)) {
+                    $parts[] = "Rasa didukung: " . self::likert_label((int)$fb->e3_val);
+                }
+                if (!empty($fb->reflection_note)) {
+                    $parts[] = "Catatan refleksi: \"" . trim($fb->reflection_note) . "\"";
+                }
+                if (!empty($parts)) {
+                    return implode(', ', $parts);
+                }
+            }
+        } catch (\Throwable $t) {
+            // Ignore and fallback to profile.
+        }
+
+        if ($profile) {
+            $e1 = round($profile->e1_score ?? 50);
+            $e2 = round($profile->e2_score ?? 50);
+            $e3 = round($profile->e3_score ?? 50);
+            return "Kesiapan emosional terkini: Motivasi {$e1}/100, Percaya diri {$e2}/100, Rasa didukung {$e3}/100";
+        }
+
+        return "Kesiapan emosional cukup baik";
+    }
+
+    /**
+     * Convert Likert 1-5 to descriptive human-friendly phrase.
+     *
+     * @param int $score
+     * @return string
+     */
+    private static function likert_label(int $score): string {
+        switch ($score) {
+            case 1:
+                return 'Kurang Bersemangat / Cemas';
+            case 2:
+                return 'Kurang Percaya Diri';
+            case 3:
+                return 'Netral / Cukup';
+            case 4:
+                return 'Percaya Diri & Siap';
+            case 5:
+                return 'Sangat Bersemangat & Percaya Diri';
+            default:
+                return 'Cukup';
         }
     }
 

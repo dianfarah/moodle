@@ -40,9 +40,20 @@
                 </p>
             </div>
 
+            {{#has_suggestion}}
+            <div class="acmls-motivation-suggestion-box p-3 mb-3 rounded" style="background: #f0f9ff; border-left: 4px solid #0284c7;">
+                <div class="font-weight-bold mb-1" style="color: #0369a1; font-size: 0.95rem;">
+                    <i class="fa fa-lightbulb-o mr-1" aria-hidden="true"></i> {{str_suggestion_title}}
+                </div>
+                <p class="acmls-motivation-popup__suggestion m-0" style="font-size: 0.95rem; line-height: 1.6; color: #0f172a;">
+                    {{suggestion}}
+                </p>
+            </div>
+            {{/has_suggestion}}
+
             {{#is_gemini}}
             <div class="d-flex align-items-center mb-3 text-muted small">
-                <span>Dihasilkan oleh AI Gemini secara adaptif berdasarkan capaian Anda.</span>
+                <span>Dihasilkan oleh AI Gemini secara adaptif berdasarkan capaianmu.</span>
             </div>
             {{/is_gemini}}
 

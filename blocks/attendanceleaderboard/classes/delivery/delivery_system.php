@@ -87,6 +87,90 @@ class delivery_system {
     }
 
     /**
+     * Get adaptive improvement advice based on Cognitive, Behavioral, and Emotional dimensions
+     * plus rich student context (name, quiz material, duration, attendance, emotion).
+     *
+     * @param object|null $profile Learner profile object or record.
+     * @param string|null $category Motivation category ('achievement', 'reinforcement', 'recovery').
+     * @param float|null $quizgrade Quiz grade percentage if recently taken.
+     * @param array<string,mixed> $context Rich student context parameters.
+     * @return string
+     */
+    public static function get_adaptive_suggestion(
+        $profile = null,
+        ?string $category = null,
+        ?float $quizgrade = null,
+        array $context = []
+    ): string {
+        $c_score = $quizgrade !== null ? (float)$quizgrade : ($profile ? (float)$profile->cognitive_score : 50.0);
+        $b_score = $profile ? (float)$profile->behavioral_score : 50.0;
+        $e_score = $profile ? (float)$profile->emotional_score : 50.0;
+        $e_conf  = $profile ? (float)($profile->e2_score ?? 50.0) : 50.0;
+        $b_access = $profile ? (int)($profile->b1_access_count ?? 0) : 0;
+        $b_punct  = $profile ? (int)($profile->b3_punctual_count ?? 0) : 0;
+
+        $name = !empty($context['student_name']) ? trim($context['student_name']) : '';
+        $quizname = !empty($context['quiz_name']) ? trim($context['quiz_name']) : 'materi ini';
+        $duration_sec = !empty($context['duration_seconds']) ? (int)$context['duration_seconds'] : 0;
+        $duration_text = !empty($context['duration_text']) ? trim($context['duration_text']) : '';
+        $has_rushed = ($duration_sec > 0 && $duration_sec < 150 && $c_score < 70.0);
+
+        $greeting = $name !== '' ? "Halo {$name}! " : "";
+        $rush_note = $has_rushed ? "Tadi kamu mengerjakannya cukup cepat ({$duration_text}), lain kali coba santai dan baca tiap butir soal lebih teliti ya. " : "";
+
+        // 1. Kognitif Rendah (< 50)
+        if ($c_score < 50.0) {
+            if ($b_score >= 50.0 || $b_access >= 10) {
+                // Perilaku rajin/aktif tetapi kognitif belum optimal -> perbaikan strategi belajar
+                return $greeting . $rush_note . "Keaktifan dan dedikasi kamu dalam mengakses modul sudah sangat bagus! Supaya pemahaman konsep di {$quizname} makin mantap, coba ubah strategimu dengan mempraktikkan langsung kode contoh baris demi baris dan buat rangkuman sendiri ya.";
+            } else if ($e_conf < 45.0 || $e_score < 40.0) {
+                // Emosional rendah (ragu / cemas) -> dorongan bertahap dan suportif
+                return $greeting . $rush_note . "Wajar banget kok kalau materi di {$quizname} terasa agak menantang di awal. Jangan merasa terbebani ya—fokus pahami satu konsep kecil dulu pelan-pelan, manfaatkan rangkuman modul, dan diskusikan jika ada bagian yang membingungkan.";
+            } else {
+                // Perilaku & Kognitif perlu ditingkatkan -> keteraturan belajar
+                return $greeting . $rush_note . "Yuk luangkan waktu yang teratur untuk membaca ulang materi di {$quizname} secara bertahap. Coba catat poin-poin pentingnya dan kerjakan latihan mandiri sebelum lanjut ke materi berikutnya ya!";
+            }
+        }
+
+        // 2. Kognitif Sedang (50 - 69.9)
+        if ($c_score < 70.0) {
+            if ($e_conf < 50.0) {
+                // Kognitif sedang tapi emosional ragu-ragu
+                return $greeting . $rush_note . "Pemahaman dasarmu di {$quizname} sebenarnya sudah di jalur yang tepat kok. Biar makin percaya diri, coba ulas kembali butir-butir kuis yang belum tepat kemarin dan kerjakan latihan serupa secara mandiri ya.";
+            } else if ($b_score < 40.0 || $b_punct === 0) {
+                // Kognitif sedang tapi kedisiplinan pengumpulan perlu ditingkatkan
+                return $greeting . $rush_note . "Konsep di {$quizname} sudah mulai kamu kuasai dengan baik! Yuk jaga keteraturanmu dalam menuntaskan aktivitas modul dan kumpulkan tugas tepat waktu biar hasil belajarmu makin maksimal.";
+            } else {
+                // Kognitif sedang seimbang
+                return $greeting . $rush_note . "Pemahaman dasar dan kebiasaan belajarmu sudah terbentuk dengan baik. Tinjau kembali beberapa butir kuis {$quizname} yang keliru dan perbanyak latihan studi kasus mandiri supaya konsepnya makin matang.";
+            }
+        }
+
+        // 3. Kognitif Tinggi (>= 70)
+        if ($b_score < 50.0) {
+            // Kognitif tinggi tapi kedisiplinan/tugas mepet
+            return $greeting . "Penguasaan konsepmu di {$quizname} tajam dan keren banget! Biar prestasimu makin sempurna, yuk jaga konsistensi dalam menyelesaikan seluruh aktivitas modul dan kumpulkan tugas tepat waktu ya.";
+        } else if ($e_score >= 70.0 && $b_score >= 70.0) {
+            // High Achiever holistik (Emosi, Kognitif, Perilaku tinggi)
+            return $greeting . "Luar biasa! Motivasi, kedisiplinan, dan penguasaan materi di {$quizname} solid banget. Pertahankan ritme belajarmu ini, coba tantang dirimu dengan eksperimen proyek mandiri, dan jangan ragu berbagi ilmu dengan teman-teman sekelasmu ya.";
+        } else {
+            // Kognitif tinggi umum
+            return $greeting . "Hasil kuis kamu di {$quizname} keren banget! Untuk memperdalam wawasanmu, coba eksplorasi materi pengayaan, terapkan konsepnya ke latihan yang lebih menantang, dan diskusikan ide-ide kreatif bersama rekan belajarmu.";
+        }
+    }
+
+    /**
+     * Backward-compatible alias for get_adaptive_suggestion.
+     *
+     * @param string|null $category Motivation category.
+     * @param float|null $quizgrade Quiz grade percentage.
+     * @return string
+     */
+    public static function get_default_suggestion(?string $category, ?float $quizgrade = null): string {
+        return self::get_adaptive_suggestion(null, $category, $quizgrade);
+    }
+
+    /**
      * Render the motivation popup template.
      *
      * @param int $userid Moodle user ID.
@@ -95,6 +179,7 @@ class delivery_system {
      * @param string $category Message category.
      * @param int|null $sentenceid Sentence repository ID.
      * @param string $source Message source.
+     * @param string $suggestion Improvement suggestion.
      * @return string
      */
     public function display_encouragement(
@@ -103,9 +188,14 @@ class delivery_system {
         string $content,
         string $category = '',
         ?int $sentenceid = null,
-        string $source = ''
+        string $source = '',
+        string $suggestion = ''
     ): string {
         global $OUTPUT;
+
+        if (empty($suggestion)) {
+            $suggestion = self::get_default_suggestion($category);
+        }
 
         return $OUTPUT->render_from_template(
             'block_attendanceleaderboard/encouragement_message',
@@ -113,6 +203,8 @@ class delivery_system {
                 'userid' => $userid,
                 'courseid' => $courseid,
                 'content' => $content,
+                'has_suggestion' => !empty($suggestion),
+                'suggestion' => $suggestion,
                 'category' => $category,
                 'category_label' => $this->get_category_label($category),
                 'sentenceid' => $sentenceid ?? 0,
@@ -120,6 +212,7 @@ class delivery_system {
                 'likert_options' => $this->get_likert_options(),
                 'str_popup_title' => get_string('motivation_popup_title', 'block_attendanceleaderboard'),
                 'str_popup_body' => get_string('motivation_popup_body', 'block_attendanceleaderboard'),
+                'str_suggestion_title' => get_string('quiz_motivation_suggestion_title', 'block_attendanceleaderboard'),
                 'str_e1_prompt' => get_string('motivation_e1_prompt', 'block_attendanceleaderboard'),
                 'str_e2_prompt' => get_string('motivation_e2_prompt', 'block_attendanceleaderboard'),
                 'str_e3_prompt' => get_string('motivation_e3_prompt', 'block_attendanceleaderboard'),
@@ -451,12 +544,25 @@ class delivery_system {
         $record = reset($records);
         $payload = json_decode($record->data_payload, true) ?: [];
 
+        $category = (string) ($payload['category'] ?? 'achievement');
+        $quizgrade = isset($payload['quizgrade']) ? (float) $payload['quizgrade'] : null;
+        $suggestion = (string) ($payload['suggestion'] ?? '');
+        if (empty($suggestion)) {
+            $profile = null;
+            $profile_record = $DB->get_record(self::TABLE_LEARNER_PROFILE, ['userid' => $userid, 'courseid' => $courseid]);
+            if ($profile_record && class_exists('\block_attendanceleaderboard\profiling\learner_profile')) {
+                $profile = \block_attendanceleaderboard\profiling\learner_profile::from_db_record($profile_record);
+            }
+            $suggestion = self::get_adaptive_suggestion($profile, $category, $quizgrade);
+        }
+
         return [
             'recordid' => (int) $record->id,
             'content' => (string) ($payload['content'] ?? ''),
-            'category' => (string) ($payload['category'] ?? 'achievement'),
+            'suggestion' => $suggestion,
+            'category' => $category,
             'source' => (string) ($payload['source'] ?? 'system'),
-            'quizgrade' => isset($payload['quizgrade']) ? (float) $payload['quizgrade'] : null,
+            'quizgrade' => $quizgrade,
         ];
     }
 
@@ -469,13 +575,24 @@ class delivery_system {
      * @return string
      */
     public function display_quiz_motivation(int $userid, int $courseid, array $mot): string {
-        global $OUTPUT;
+        global $OUTPUT, $DB;
 
         $quizgrade = $mot['quizgrade'] ?? null;
         $has_quizgrade = ($quizgrade !== null);
         $quizgrade_formatted = $has_quizgrade
             ? get_string('quiz_motivation_score', 'block_attendanceleaderboard', round($quizgrade, 1))
             : '';
+
+        $category = $mot['category'] ?? '';
+        $suggestion = $mot['suggestion'] ?? '';
+        if (empty($suggestion)) {
+            $profile = null;
+            $profile_record = $DB->get_record(self::TABLE_LEARNER_PROFILE, ['userid' => $userid, 'courseid' => $courseid]);
+            if ($profile_record && class_exists('\block_attendanceleaderboard\profiling\learner_profile')) {
+                $profile = \block_attendanceleaderboard\profiling\learner_profile::from_db_record($profile_record);
+            }
+            $suggestion = self::get_adaptive_suggestion($profile, $category, $quizgrade);
+        }
 
         return $OUTPUT->render_from_template(
             'block_attendanceleaderboard/quiz_motivation',
@@ -484,14 +601,17 @@ class delivery_system {
                 'courseid' => $courseid,
                 'recordid' => $mot['recordid'] ?? 0,
                 'content' => $mot['content'] ?? '',
-                'category' => $mot['category'] ?? '',
-                'category_label' => $this->get_category_label($mot['category'] ?? ''),
+                'has_suggestion' => !empty($suggestion),
+                'suggestion' => $suggestion,
+                'category' => $category,
+                'category_label' => $this->get_category_label($category),
                 'source' => $mot['source'] ?? '',
                 'is_gemini' => ($mot['source'] ?? '') === 'gemini',
                 'has_quizgrade' => $has_quizgrade,
                 'quizgrade_formatted' => $quizgrade_formatted,
                 'str_title' => get_string('quiz_motivation_title', 'block_attendanceleaderboard'),
                 'str_subtitle' => get_string('quiz_motivation_subtitle', 'block_attendanceleaderboard'),
+                'str_suggestion_title' => get_string('quiz_motivation_suggestion_title', 'block_attendanceleaderboard'),
                 'str_continue' => get_string('quiz_motivation_continue', 'block_attendanceleaderboard'),
             ]
         );

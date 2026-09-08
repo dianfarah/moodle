@@ -400,13 +400,13 @@ $string['privacy:metadata:acmls_learner_consent:timemodified']       = 'Timestam
 
 // Popup motivasi dan umpan balik untuk riset.
 $string['motivation_popup_title'] = 'Check-In Motivasi';
-$string['motivation_popup_body'] = 'Silakan baca pesan berikut, lalu beri tahu kami bagaimana perasaan Anda setelah menerimanya.';
-$string['motivation_feeling_prompt'] = 'Bagaimana perasaan Anda setelah membaca pesan ini?';
+$string['motivation_popup_body'] = 'Silakan baca pesan berikut, lalu beri tahu kami bagaimana perasaanmu setelah menerimanya.';
+$string['motivation_feeling_prompt'] = 'Bagaimana perasaanmu setelah membaca pesan ini?';
 $string['motivation_reflection_label'] = 'Refleksi singkat (opsional)';
-$string['motivation_reflection_placeholder'] = 'Ceritakan reaksi Anda dalam satu atau dua kalimat.';
+$string['motivation_reflection_placeholder'] = 'Ceritakan reaksimu dalam satu atau dua kalimat.';
 $string['motivation_submit'] = 'Kirim respons';
-$string['motivation_feeling_required'] = 'Silakan pilih satu perasaan sebelum mengirim respons Anda.';
-$string['motivation_research_notice'] = 'Respons Anda akan disimpan untuk evaluasi intervensi dan analisis penelitian.';
+$string['motivation_feeling_required'] = 'Silakan pilih satu perasaan sebelum mengirim responsmu.';
+$string['motivation_research_notice'] = 'Responsmu akan disimpan untuk evaluasi intervensi dan analisis penelitian.';
 $string['motivation_feeling_very_motivated'] = 'Sangat termotivasi';
 $string['motivation_feeling_motivated'] = 'Termotivasi';
 $string['motivation_feeling_neutral'] = 'Netral';
@@ -424,12 +424,14 @@ $string['motivation_likert_5'] = '😍 Sangat Menerima';
 $string['motivation_feedback_required'] = 'Silakan jawab ketiga pertanyaan sebelum mengirim respons.';
 
 $string['emotion_checkin_title'] = 'Check-in Kesiapan Emosi';
-$string['emotion_checkin_subtitle'] = 'Sebelum memulai pembelajaran materi dan latihan, sampaikan kesiapan emosi Anda hari ini.';
+$string['emotion_checkin_subtitle'] = 'Sebelum memulai pembelajaran materi dan latihan, sampaikan kesiapan emosimu hari ini.';
 $string['emotion_checkin_submit'] = 'Mulai Belajar';
 $string['quiz_motivation_title'] = 'Umpan Balik Motivasi Belajar';
 $string['quiz_motivation_subtitle'] = 'Apresiasi dan Evaluasi Pasca-Kuis';
 $string['quiz_motivation_continue'] = 'Lanjutkan Belajar';
-$string['quiz_motivation_score'] = 'Nilai Kuis Anda: {$a}%';
+$string['quiz_motivation_score'] = 'Nilai Kuis Kamu: {$a}%';
+$string['quiz_motivation_suggestion_title'] = 'Saran Perbaikan & Langkah Selanjutnya';
+$string['motivation_suggestion_title'] = 'Saran Perbaikan';
 
 // Metadata privasi - acmls_motivation_feedback.
 $string['privacy:metadata:acmls_motivation_feedback'] = 'Menyimpan setiap respons mahasiswa terhadap popup motivasi, termasuk pilihan perasaan dan teks refleksi opsional.';

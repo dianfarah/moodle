@@ -27,6 +27,16 @@
 
         <div class="acmls-motivation-popup__body">
             <p class="acmls-motivation-popup__message">{{content}}</p>
+            {{#has_suggestion}}
+            <div class="acmls-motivation-suggestion-box p-3 mb-3 rounded" style="background: #f0f9ff; border-left: 4px solid #0284c7;">
+                <div class="font-weight-bold mb-1" style="color: #0369a1; font-size: 0.95rem;">
+                    <i class="fa fa-lightbulb-o mr-1" aria-hidden="true"></i> {{str_suggestion_title}}
+                </div>
+                <p class="acmls-motivation-popup__suggestion m-0" style="font-size: 0.95rem; line-height: 1.6; color: #0f172a;">
+                    {{suggestion}}
+                </p>
+            </div>
+            {{/has_suggestion}}
             <p class="acmls-motivation-popup__helper">{{str_popup_body}}</p>
 
             <form class="acmls-motivation-feedback-form" novalidate>

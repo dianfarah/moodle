@@ -129,9 +129,10 @@ class llm_preparation {
      *
      * @param learner_profile $profile Learner profile.
      * @param string $category Intervention category.
+     * @param array<string,mixed> $context Rich contextual parameters (name, quiz, duration, attendance, emotion).
      * @return array<string,mixed>
      */
-    public function generate_encouragement_record(learner_profile $profile, string $category): array {
+    public function generate_encouragement_record(learner_profile $profile, string $category, array $context = []): array {
         if ($this->provider === null || !$this->provider->is_available()) {
             return $this->fallback_to_template_record($category, $profile->performance_category);
         }
@@ -143,7 +144,7 @@ class llm_preparation {
 
         try {
             $anonprofile = $this->anonymize_profile($profile);
-            $prompt = $this->build_prompt($anonprofile, $category);
+            $prompt = $this->build_prompt($anonprofile, $category, $context);
             $content = $this->call_with_retry($prompt);
 
             if (!$this->validate_content($content)) {
@@ -166,9 +167,13 @@ class llm_preparation {
                 'learner_context' => $anonprofile,
             ]);
 
+            $quizgrade = isset($context['quiz_grade']) ? (float)$context['quiz_grade'] : null;
+            $suggestion = $this->generate_suggestion($profile, $category, $quizgrade, $context);
+
             return [
                 'messageid' => $messageid,
                 'content' => $content,
+                'suggestion' => $suggestion,
                 'source' => motivation_sentence_repository::SOURCE_LLM,
                 'category' => $category,
                 'llm_model' => $this->get_current_model_name(),
@@ -289,10 +294,13 @@ class llm_preparation {
             $motivationtarget,
             'id'
         );
+        $suggestion = \block_attendanceleaderboard\delivery\delivery_system::get_default_suggestion($category);
+
         if ($record !== null) {
             return [
                 'messageid' => (int) $record->id,
                 'content' => (string) $record->content,
+                'suggestion' => $suggestion,
                 'source' => (string) $record->source,
                 'category' => $category,
                 'llm_model' => (string) ($record->llm_model ?? ''),
@@ -311,6 +319,7 @@ class llm_preparation {
             return [
                 'messageid' => (int) $record->id,
                 'content' => (string) $record->content,
+                'suggestion' => $suggestion,
                 'source' => (string) $record->source,
                 'category' => $category,
                 'llm_model' => (string) ($record->llm_model ?? ''),
@@ -320,6 +329,7 @@ class llm_preparation {
         return [
             'messageid' => null,
             'content' => self::DEFAULT_FALLBACK,
+            'suggestion' => $suggestion,
             'source' => motivation_sentence_repository::SOURCE_TEMPLATE,
             'category' => $category,
             'llm_model' => '',
@@ -327,47 +337,169 @@ class llm_preparation {
     }
 
     /**
-     * Build an Indonesian formal-academic prompt for the LLM.
+     * Generate an actionable improvement suggestion using LLM or default fallback.
+     *
+     * @param learner_profile $profile Learner profile.
+     * @param string $category Intervention category.
+     * @param float|null $quizgrade Quiz grade if triggered by quiz submission.
+     * @param array<string,mixed> $context Context data (name, quiz, duration, attendance, emotion).
+     * @return string
+     */
+    public function generate_suggestion(learner_profile $profile, string $category, ?float $quizgrade = null, array $context = []): string {
+        $default = \block_attendanceleaderboard\delivery\delivery_system::get_adaptive_suggestion($profile, $category, $quizgrade, $context);
+        if ($this->provider === null || !$this->provider->is_available()) {
+            return $default;
+        }
+
+        try {
+            $anonprofile = $this->anonymize_profile($profile);
+            $prompt = $this->build_suggestion_prompt($anonprofile, $category, $quizgrade, $context);
+            $suggestion = $this->call_with_retry($prompt);
+            if ($this->validate_content($suggestion)) {
+                return trim($suggestion);
+            }
+        } catch (\Throwable $e) {
+            error_log('llm_preparation: generate_suggestion error - ' . $e->getMessage());
+        }
+
+        return $default;
+    }
+
+    /**
+     * Build a multidimensional academic advice prompt for the LLM based on emotion, cognition, behavior, and rich student context.
      *
      * @param array<string,mixed> $anon_profile Anonymised profile.
      * @param string $category Intervention category.
+     * @param float|null $quizgrade Latest quiz grade percentage if available.
+     * @param array<string,mixed> $context Rich contextual parameters.
      * @return string
      */
-    private function build_prompt(array $anon_profile, string $category): string {
+    private function build_suggestion_prompt(array $anon_profile, string $category, ?float $quizgrade = null, array $context = []): string {
         $performancelabel = $this->performance_category_label((int) ($anon_profile['performance_category'] ?? 1));
         $motivationlabel = $this->motivation_level_label((float) ($anon_profile['motivation_level'] ?? 50.0));
-        
-        $b_desc = "Keterlibatan Perilaku (Behavioral - b): " .
-                  "Akses Moodle: {$anon_profile['b1_access_count']} kali, " .
-                  "Penyelesaian Aktivitas: {$anon_profile['b2_completion_count']} aktivitas, " .
-                  "Ketepatan Tugas: {$anon_profile['b3_punctual_count']} tugas tepat waktu. " .
-                  "Skor Perilaku keseluruhan: {$anon_profile['behavioral_score']}/100.";
-                  
-        $c_desc = "Keterlibatan Kognitif (Cognitive - c): " .
-                  "Rata-rata Nilai Kuis: {$anon_profile['c1_quiz_avg']}/100, " .
-                  "Percobaan Kuis: {$anon_profile['c2_quiz_attempts']} kali. " .
-                  "Skor Kognitif keseluruhan: {$anon_profile['cognitive_score']}/100.";
-                  
-        $e_desc = "Keterlibatan Emosional (Emotional - e): " .
-                  "Skor Motivasi Belajar: {$anon_profile['e1_score']}/100, " .
-                  "Skor Kepercayaan Diri: {$anon_profile['e2_score']}/100, " .
-                  "Skor Rasa Didukung: {$anon_profile['e3_score']}/100. " .
-                  "Skor Emosional keseluruhan: {$anon_profile['emotional_score']}/100.";
 
-        return "Anda adalah asisten motivasional akademik personal. Hasilkan satu kalimat motivasional\n" .
-            "dalam bahasa Indonesia formal yang sangat personal untuk seorang mahasiswa berdasarkan parameter keterlibatan berikut:\n\n" .
-            "KONDISI MAHASISWA:\n" .
+        $name = !empty($context['student_name']) ? $context['student_name'] : '';
+        $quizname = !empty($context['quiz_name']) ? $context['quiz_name'] : 'Kuis Evaluasi';
+        $duration = !empty($context['duration_text']) ? $context['duration_text'] : '';
+        $attendance = !empty($context['attendance_summary']) ? $context['attendance_summary'] : '';
+        $emotion = !empty($context['emotion_summary']) ? $context['emotion_summary'] : '';
+
+        $name_line = $name !== '' ? "- Nama Mahasiswa: {$name}\n" : "";
+        $quiz_line = "- Materi Kuis / Topik: {$quizname}\n";
+        $grade_val = $quizgrade !== null ? round($quizgrade, 1) . "%" : "{$anon_profile['c1_quiz_avg']}%";
+        $grade_line = "- Nilai Kuis Materi Ini: {$grade_val}\n";
+        $duration_line = $duration !== '' ? "- Lama Waktu Pengerjaan Kuis: {$duration}\n" : "";
+        $attendance_line = $attendance !== '' ? "- Data Kehadiran & Keaktifan Belajar: {$attendance}\n" : "";
+        $emotion_line = $emotion !== '' ? "- Hasil Inputan Kesiapan Emosi Mahasiswa: {$emotion}\n" : "";
+
+        $b_desc = "Dimensi Perilaku: " .
+                  "Akses materi: {$anon_profile['b1_access_count']} kali, " .
+                  "Aktivitas tuntas: {$anon_profile['b2_completion_count']} modul, " .
+                  "Ketepatan tugas: {$anon_profile['b3_punctual_count']} tepat waktu. " .
+                  "Skor perilaku: {$anon_profile['behavioral_score']}/100.";
+
+        $c_desc = "Dimensi Kognitif: " .
+                  "Rata-rata kuis: {$anon_profile['c1_quiz_avg']}/100, " .
+                  "Percobaan kuis: {$anon_profile['c2_quiz_attempts']} kali. " .
+                  "Skor kognitif: {$anon_profile['cognitive_score']}/100.";
+
+        $e_desc = "Dimensi Emosional: " .
+                  "Motivasi belajar: {$anon_profile['e1_score']}/100, " .
+                  "Kepercayaan diri: {$anon_profile['e2_score']}/100, " .
+                  "Perasaan didukung: {$anon_profile['e3_score']}/100. " .
+                  "Skor emosional: {$anon_profile['emotional_score']}/100.";
+
+        return "Kamu adalah mentor belajar yang ramah, hangat, dan suportif. Hasilkan 1-2 kalimat saran perbaikan dan rekomendasi langkah belajar konkret dalam bahasa Indonesia yang santai, bersahabat, tidak kaku, serta ADAPTIF secara holistik berdasarkan data mahasiswa berikut:\n\n" .
+            "DATA PERSONAL & CAPAIAN MAHASISWA:\n" .
+            "{$name_line}" .
+            "{$quiz_line}" .
+            "{$grade_line}" .
+            "{$duration_line}" .
+            "{$attendance_line}" .
+            "{$emotion_line}" .
+            "- Kategori performa: {$performancelabel}\n" .
+            "- Kategori motivasi: {$motivationlabel}\n" .
+            "- Kategori intervensi: {$category}\n" .
+            "- {$b_desc}\n" .
+            "- {$c_desc}\n" .
+            "- {$e_desc}\n\n" .
+            "ATURAN GENERASI SARAN ADAPTIF:\n" .
+            "1. Berikan rekomendasi langkah belajar konkret yang SPESIFIK berkaitan dengan topik materi \"{$quizname}\". Jika materinya HTML, singgung tag semantik/elemen; jika CSS, singgung styling/selektor/tata letak layout; atau sesuai nama bab materinya.\n" .
+            "2. Analisis interaksi holistik antara Nama, Lama Mengerjakan ({$duration}), Nilai ({$grade_val}), Kehadiran, dan Kesiapan Emosinya:\n" .
+            "   - Bila mengerjakan sangat cepat (< 2-3 menit) tapi nilai masih rendah: sarankan dengan santai agar tidak terburu-buru dan lebih cermat membaca setiap butir soal kuis materi tersebut.\n" .
+            "   - Bila emosi mahasiswa sempat cemas atau kurang percaya diri: berikan langkah kecil bertahap yang menenangkan dan membuat lebih yakin dengan kemampuannya.\n" .
+            "   - Bila kehadiran/keaktifan platform tinggi tapi nilai materi ini belum optimal: apresiasi kerajinannya dan arahkan metode belajarnya ke latihan coding langsung di editor.\n" .
+            "   - Bila nilai tinggi dan materi dikuasai: tantang mencoba materi tingkat lanjut atau eksplorasi proyek mandiri.\n" .
+            "3. Kalimat harus ringkas (maksimal 2 kalimat), bersahabat, terasa seperti obrolan mentor yang peduli, dan memberikan tindakan nyata yang bisa langsung dipraktikkan.\n" .
+            "4. PENTING: Gunakan kata sapaan 'kamu' (contoh: 'pemahamanmu', 'langkah belajarmu'). JANGAN PERNAH gunakan kata 'Anda'. Hindari bahasa kaku atau birokratis.\n" .
+            "5. JANGAN sebutkan simbol variabel teknis (seperti 'b1', 'c2', 'e1'). Sebutkan secara alami dalam konteks pembelajaran.";
+    }
+
+    /**
+     * Build an Indonesian warm, supportive, casual-mentor prompt for the LLM.
+     *
+     * @param array<string,mixed> $anon_profile Anonymised profile.
+     * @param string $category Intervention category.
+     * @param array<string,mixed> $context Rich contextual parameters.
+     * @return string
+     */
+    private function build_prompt(array $anon_profile, string $category, array $context = []): string {
+        $performancelabel = $this->performance_category_label((int) ($anon_profile['performance_category'] ?? 1));
+        $motivationlabel = $this->motivation_level_label((float) ($anon_profile['motivation_level'] ?? 50.0));
+
+        $name = !empty($context['student_name']) ? $context['student_name'] : '';
+        $quizname = !empty($context['quiz_name']) ? $context['quiz_name'] : 'Kuis Evaluasi';
+        $duration = !empty($context['duration_text']) ? $context['duration_text'] : '';
+        $attendance = !empty($context['attendance_summary']) ? $context['attendance_summary'] : '';
+        $emotion = !empty($context['emotion_summary']) ? $context['emotion_summary'] : '';
+        $quizgrade = isset($context['quiz_grade']) && $context['quiz_grade'] !== null ? round((float)$context['quiz_grade'], 1) . "%" : "{$anon_profile['c1_quiz_avg']}%";
+
+        $name_line = $name !== '' ? "- Nama Mahasiswa: {$name}\n" : "";
+        $quiz_line = "- Materi Kuis yang Baru Selesai Dikerjakan: {$quizname}\n";
+        $grade_line = "- Nilai Kuis Materi Ini: {$quizgrade}\n";
+        $duration_line = $duration !== '' ? "- Lama Pengerjaan Kuis: {$duration}\n" : "";
+        $attendance_line = $attendance !== '' ? "- Kehadiran & Keaktifan Belajar: {$attendance}\n" : "";
+        $emotion_line = $emotion !== '' ? "- Hasil Inputan Kesiapan Emosi Mahasiswa: {$emotion}\n" : "";
+        
+        $b_desc = "Keterlibatan Perilaku: " .
+                  "Akses materi: {$anon_profile['b1_access_count']} kali, " .
+                  "Penyelesaian aktivitas: {$anon_profile['b2_completion_count']} aktivitas, " .
+                  "Ketepatan tugas: {$anon_profile['b3_punctual_count']} tugas tepat waktu. " .
+                  "Skor perilaku: {$anon_profile['behavioral_score']}/100.";
+                  
+        $c_desc = "Keterlibatan Kognitif: " .
+                  "Rata-rata nilai kuis: {$anon_profile['c1_quiz_avg']}/100, " .
+                  "Percobaan kuis: {$anon_profile['c2_quiz_attempts']} kali. " .
+                  "Skor kognitif: {$anon_profile['cognitive_score']}/100.";
+                  
+        $e_desc = "Keterlibatan Emosional: " .
+                  "Motivasi belajar: {$anon_profile['e1_score']}/100, " .
+                  "Kepercayaan diri: {$anon_profile['e2_score']}/100, " .
+                  "Rasa didukung: {$anon_profile['e3_score']}/100. " .
+                  "Skor emosional: {$anon_profile['emotional_score']}/100.";
+
+        return "Kamu adalah mentor belajar yang ramah, hangat, dan selalu memberi semangat. Hasilkan satu kalimat motivasi\n" .
+            "dalam bahasa Indonesia yang santai, suportif, bersahabat (tidak kaku/tidak formal) dan SANGAT PERSONAL untuk mahasiswa berdasarkan parameter berikut:\n\n" .
+            "DATA PERSONAL MAHASISWA:\n" .
+            "{$name_line}" .
+            "{$quiz_line}" .
+            "{$grade_line}" .
+            "{$duration_line}" .
+            "{$attendance_line}" .
+            "{$emotion_line}" .
             "- Kategori performa: {$performancelabel}\n" .
             "- Tingkat motivasi: {$motivationlabel} (Skor gabungan: {$anon_profile['motivation_level']}/100)\n" .
             "- Kategori intervensi: {$category}\n" .
             "- {$b_desc}\n" .
             "- {$c_desc}\n" .
             "- {$e_desc}\n\n" .
-            "ATURAN GENERASI:\n" .
-            "1. Hasilkan kalimat yang secara spesifik menyinggung kekuatan mereka atau memberikan dorongan pada area yang kurang.\n" .
-            "2. Kalimat harus singkat (1-2 kalimat), positif, akademik, dan mendukung semangat belajar.\n" .
-            "3. JANGAN sebutkan nama-nama variabel teknis (seperti 'b1', 'c2', dll.) secara langsung, sebutkan secara alami (misal: 'ketepatan pengumpulan tugas Anda' atau 'semangat Anda yang tinggi dalam mengerjakan kuis').\n" .
-            "4. Gunakan bahasa Indonesia yang santun, formal, inspiratif, dan menyemangati.";
+            "ATURAN GENERASI MOTIVASI:\n" .
+            "1. Panggil nama mahasiswa (jika tersedia: '{$name}') di awal kalimat (misal: 'Halo {$name}!' atau 'Keren banget, {$name}!') agar terasa akrab.\n" .
+            "2. Singgung topik materi yang baru diselesaikannya ({$quizname}), nilai capaiannya ({$quizgrade}), atau durasi pengerjaannya ({$duration}) secara alami dan suportif.\n" .
+            "3. Pertimbangkan emosinya: bila sempat cemas/kurang pede, yakinkan bahwa usahanya menyelesaikan materi ini sudah merupakan pencapaian berharga.\n" .
+            "4. Kalimat harus singkat (1-2 kalimat), positif, hangat, dan membangkitkan semangat belajarnya kembali.\n" .
+            "5. PENTING: Gunakan kata sapaan 'kamu' (contoh: 'semangatmu', 'usahamu', 'proses belajarmu'). JANGAN PERNAH gunakan kata 'Anda' dan jangan gunakan bahasa birokratis/terlalu formal.\n" .
+            "6. JANGAN sebutkan nama variabel teknis (seperti 'b1', 'c2', dll.) secara langsung.";
     }
 
     /**
